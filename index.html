@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="lo">
+<head>
+    <meta charset="UTF-8">
+    <!-- ສຳຄັນ: ເຮັດໃຫ້ຮອງຮັບມືຖືເຕັມຈໍ ແລະ ບໍ່ໃຫ້ຊູມເອງ -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ລະບົບບັນຊີລາຍຮັບ-ລາຍຈ່າຍ</title>
+    
+    <!-- Tailwind CSS (ສຳລັບຕົກແຕ່ງຄວາມງາມ) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue 3 (ສຳລັບຈັດການລະບົບແທນ React ໃຫ້ຢູ່ໃນໄຟລ໌ດຽວ) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Phosphor Icons (ໄອຄອນທັນສະໄໝ) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans Lao', sans-serif;
+            background-color: #f8fafc;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        /* ເຊື່ອງໂຄ້ດກ່ອນທີ່ Vue ຈະໂຫຼດແລ້ວ */
+        [v-cloak] { display: none; }
+        
+        /* ຕົກແຕ່ງ Scrollbar ໃຫ້ງາມຂຶ້ນ */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* ຕັ້ງຄ່າການພິມ */
+        @media print {
+            body { background: white !important; }
+            .print-hidden { display: none !important; }
+            .print-area { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased selection:bg-blue-200 selection:text-blue-900">
+
+    <div id="app" v-cloak class="h-screen w-full flex flex-col md:flex-row overflow-hidden">
+
+        <!-- ================= LOGIN SCREEN ================= -->
+        <div v-if="!user" class="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-md w-full text-center border border-gray-100">
+                <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30 transform rotate-3">
+                    <i class="ph ph-wallet text-4xl -rotate-3"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-1">ລະບົບບັນຊີລາຍຮັບ-ລາຍຈ່າຍ</h1>
+                <p class="text-gray-500 mb-8 font-medium text-sm">ພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ</p>
+                
+                <form @submit.prevent="handleLogin" class="space-y-5 text-left">
+                    <div v-if="loginError" class="bg-red-50 text-red-600 p-3.5 rounded-xl text-sm text-center border border-red-100 font-medium flex items-center justify-center gap-2">
+                        <i class="ph-fill ph-warning-circle text-lg"></i> {{ loginError }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">ຊື່ຜູ້ໃຊ້ (Username)</label>
+                        <div class="relative">
+                            <i class="ph ph-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                            <input type="text" v-model="loginUsername" :disabled="isLoggingIn" required
+                                class="w-full border border-gray-200 rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50/50 transition-all"
+                                placeholder="ປ້ອນຊື່ຜູ້ໃຊ້">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">ລະຫັດຜ່ານ (Password)</label>
+                        <div class="relative">
+                            <i class="ph ph-lock-key absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
+                            <input type="password" v-model="loginPassword" :disabled="isLoggingIn" required
+                                class="w-full border border-gray-200 rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50/50 transition-all"
+                                placeholder="ປ້ອນລະຫັດຜ່ານ">
+                        </div>
+                    </div>
+                    <button type="submit" :disabled="isLoggingIn"
+                        class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white p-4 rounded-xl font-bold transition-all shadow-md shadow-blue-500/20 mt-4 disabled:opacity-70 disabled:cursor-not-allowed">
+                        <i v-if="isLoggingIn" class="ph ph-spinner animate-spin text-xl"></i>
+                        {{ isLoggingIn ? 'ກຳລັງກວດສອບ...' : 'ເຂົ້າສູ່ລະບົບ' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= MAIN APP ================= -->
+        <template v-else>
+            <!-- 📱 Mobile Header (Fixed Top) -->
+            <header class="md:hidden bg-white border-b border-gray-100 h-16 fixed top-0 w-full z-20 flex items-center justify-between px-4 print-hidden shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                        <i class="ph ph-wallet text-lg"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-md font-bold text-gray-800 leading-tight">ລະບົບບັນຊີ</h2>
+                        <p class="text-[10px] text-gray-500 font-medium leading-tight">ພະແນກໂຄສະນາ</p>
+                    </div>
+                </div>
+                <!-- ໄຟສະຖານະການເຊື່ອມຕໍ່ (Mobile) -->
+                <div class="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full border border-gray-100">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span v-if="sheetUrl" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="sheetUrl ? 'bg-green-500' : 'bg-red-500'"></span>
+                    </span>
+                    <span class="text-xs font-semibold" :class="sheetUrl ? 'text-green-700' : 'text-red-600'">
+                        {{ sheetUrl ? 'ອອນລາຍ' : 'ອອຟລາຍ' }}
+                    </span>
+                </div>
+            </header>
+
+            <!-- 💻 Desktop Sidebar -->
+            <aside class="hidden md:flex w-64 bg-white border-r border-gray-100 flex-col print-hidden z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-3">
+                    <div class="w-11 h-11 bg-gradient-to-tr from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                        <i class="ph ph-wallet text-2xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800">ລະບົບບັນຊີ</h2>
+                        <p class="text-xs text-gray-500 font-medium">ພະແນກໂຄສະນາ</p>
+                    </div>
+                </div>
+                
+                <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
+                    <button @click="currentView = 'dashboard'"
+                        class="w-full flex items-center gap-3 p-3.5 rounded-xl transition-all font-medium"
+                        :class="currentView === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'">
+                        <i class="ph ph-squares-four text-xl" :class="currentView === 'dashboard' ? 'ph-fill' : ''"></i>
+                        ໜ້າຫຼັກ / ຂໍ້ມູນ
+                    </button>
+                    
+                    <button v-if="user.role === 'admin'" @click="currentView = 'print'"
+                        class="w-full flex items-center gap-3 p-3.5 rounded-xl transition-all font-medium"
+                        :class="currentView === 'print' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'">
+                        <i class="ph ph-printer text-xl" :class="currentView === 'print' ? 'ph-fill' : ''"></i>
+                        ພິມບົດສະຫຼຸບ
+                    </button>
+                    
+                    <div v-if="user.role === 'admin'" class="pt-4 mt-4 border-t border-gray-100">
+                        <button @click="isSettingsOpen = true"
+                            class="w-full flex items-center gap-3 p-3.5 rounded-xl transition-all font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent hover:border-gray-200">
+                            <i class="ph ph-gear text-xl"></i>
+                            ຕັ້ງຄ່າ API Sheet
+                        </button>
+                    </div>
+                </nav>
+
+                <div class="p-4 border-t border-gray-100 bg-gray-50/50 m-4 rounded-2xl">
+                    <div class="flex items-center gap-3 mb-4 px-1">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'">
+                            <i class="ph text-xl" :class="user.role === 'admin' ? 'ph-shield-check' : 'ph-user'"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <p class="text-sm font-bold text-gray-800 truncate">
+                                {{ user.role === 'admin' ? 'ແອັດມິນ (Admin)' : 'ສະມາຊິກ (Member)' }}
+                            </p>
+                            <p class="text-[11px] flex items-center gap-1.5 mt-0.5">
+                                <span class="w-2 h-2 rounded-full" :class="sheetUrl ? 'bg-green-500' : 'bg-red-500'"></span>
+                                <span class="truncate" :class="sheetUrl ? 'text-green-600' : 'text-red-600'">
+                                    {{ sheetUrl ? 'ເຊື່ອມຕໍ່ Sheet ແລ້ວ' : 'ຍັງບໍ່ເຊື່ອມຕໍ່ (Offline)' }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    <button @click="logout" class="w-full flex items-center justify-center gap-2 text-red-600 bg-red-50/80 hover:bg-red-100 p-3 rounded-xl transition-colors font-bold text-sm">
+                        <i class="ph ph-sign-out text-lg"></i> ອອກຈາກລະບົບ
+                    </button>
+                </div>
+            </aside>
+
+            <!-- 📱 Mobile Bottom Nav -->
+            <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around items-center h-16 pb-safe z-30 print-hidden shadow-[0_-4px_24px_rgba(0,0,0,0.03)]">
+                <button @click="currentView = 'dashboard'" class="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors" :class="currentView === 'dashboard' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'">
+                    <i class="ph text-2xl" :class="currentView === 'dashboard' ? 'ph-fill ph-squares-four' : 'ph-squares-four'"></i>
+                    <span class="text-[10px] font-bold">ໜ້າຫຼັກ</span>
+                </button>
+                
+                <button v-if="user.role === 'admin'" @click="openNewModal" class="flex-none -mt-6 bg-gradient-to-tr from-blue-600 to-blue-500 text-white h-14 w-14 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#f8fafc] active:scale-95 transition-transform">
+                    <i class="ph ph-plus text-2xl"></i>
+                </button>
+                
+                <button v-if="user.role === 'admin'" @click="currentView = 'print'" class="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors" :class="currentView === 'print' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'">
+                    <i class="ph text-2xl" :class="currentView === 'print' ? 'ph-fill ph-printer' : 'ph-printer'"></i>
+                    <span class="text-[10px] font-bold">ພິມບົດສະຫຼຸບ</span>
+                </button>
+                
+                <button v-if="user.role === 'member'" @click="logout" class="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors text-red-500">
+                    <i class="ph ph-sign-out text-2xl"></i>
+                    <span class="text-[10px] font-bold">ອອກລະບົບ</span>
+                </button>
+            </nav>
+
+            <!-- 🔄 Loading Bar -->
+            <div v-if="isLoading" class="fixed top-0 left-0 w-full h-1 bg-gray-200 z-[100] print-hidden">
+                <div class="h-full bg-blue-500 animate-pulse w-full"></div>
+            </div>
+
+            <!-- 📌 Main Content Area -->
+            <main class="flex-1 h-full overflow-y-auto relative bg-[#f8fafc] pt-16 md:pt-0 pb-20 md:pb-0 print:p-0 print:m-0 print:overflow-visible print:bg-white print:h-auto">
+                
+                <!-- Dashboard View -->
+                <div v-if="currentView === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto">
+                    <!-- Header -->
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 md:mb-8 gap-4">
+                        <div class="hidden md:block">
+                            <h1 class="text-2xl font-bold text-gray-800">ແຜງຄວບຄຸມ (Dashboard)</h1>
+                            <p class="text-gray-500 text-sm mt-1">ພາບລວມລາຍຮັບ-ລາຍຈ່າຍ</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click="fetchTransactions" :disabled="isLoading || !sheetUrl"
+                                class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 md:py-2 rounded-xl transition-all shadow-sm disabled:opacity-50 font-medium text-sm">
+                                <i class="ph ph-arrows-clockwise text-lg" :class="isLoading ? 'animate-spin text-blue-600' : ''"></i>
+                                <span class="md:inline">ໂຫຼດຂໍ້ມູນໃໝ່</span>
+                            </button>
+                            <!-- ປຸ່ມເພີ່ມເທິງ Desktop -->
+                            <button v-if="user.role === 'admin'" @click="openNewModal"
+                                class="hidden md:flex flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl transition-all shadow-sm font-medium text-sm">
+                                <i class="ph ph-plus text-lg"></i> ເພີ່ມລາຍການ
+                            </button>
+                            <!-- ປຸ່ມອອກຈາກລະບົບ (ສະແດງສະເພາະມືຖືສຳລັບ admin) -->
+                            <button v-if="user.role === 'admin'" @click="logout" class="md:hidden flex-none flex items-center justify-center bg-white border border-red-200 text-red-600 w-11 rounded-xl shadow-sm active:bg-red-50">
+                                <i class="ph ph-sign-out text-lg"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div v-if="!sheetUrl && user.role === 'admin'" class="bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-xl mb-6 flex items-start gap-3 shadow-sm">
+                        <i class="ph-fill ph-warning-circle mt-0.5 text-orange-500 text-xl shrink-0"></i>
+                        <div>
+                            <p class="font-bold">ທ່ານຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່ Google Sheet</p>
+                            <p class="text-sm mt-1 opacity-90 leading-relaxed">ກະລຸນາໄປທີ່ເມນູ <b>ຕັ້ງຄ່າ API Sheet</b> ເພື່ອໃສ່ URL ໃຫ້ລະບົບສາມາດດຶງ ແລະ ບັນທຶກຂໍ້ມູນໄດ້.</p>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 relative overflow-hidden group">
+                            <div class="w-10 h-10 md:w-14 md:h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="ph ph-trend-up text-xl md:text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs md:text-sm text-gray-500 font-semibold mb-0.5 md:mb-1">ລາຍຮັບລວມ</p>
+                                <p class="text-lg md:text-2xl font-bold text-gray-800">{{ formatMoney(totalIncome) }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 relative overflow-hidden group">
+                            <div class="w-10 h-10 md:w-14 md:h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="ph ph-trend-down text-xl md:text-2xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs md:text-sm text-gray-500 font-semibold mb-0.5 md:mb-1">ລາຍຈ່າຍລວມ</p>
+                                <p class="text-lg md:text-2xl font-bold text-gray-800">{{ formatMoney(totalExpense) }}</p>
+                            </div>
+                        </div>
+                        <!-- ຍອດເຫຼືອ ກວມ 2 ຫ້ອງໃນມືຖື ໃຫ້ມັນເຕັມແຖວລຸ່ມ -->
+                        <div class="col-span-2 lg:col-span-1 bg-gradient-to-br p-4 md:p-6 rounded-2xl shadow-md border border-transparent flex items-center gap-4 md:gap-5 relative overflow-hidden group"
+                             :class="balance >= 0 ? 'from-blue-600 to-blue-700 text-white shadow-blue-500/30' : 'from-red-600 to-red-700 text-white shadow-red-500/30'">
+                            <!-- ວົງກົມປະດັບພື້ນຫຼັງ -->
+                            <div class="absolute -right-6 -top-6 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+                            
+                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm">
+                                <i class="ph ph-wallet text-2xl md:text-3xl"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs md:text-sm font-medium mb-0.5 opacity-90 text-blue-50">ຍອດຄົງເຫຼືອ (ທີ່ເລືອກ)</p>
+                                <p class="text-2xl md:text-3xl font-bold tracking-tight">{{ formatMoney(balance) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
+                        <div class="w-full md:w-auto flex flex-col gap-1.5">
+                            <label class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">ເລືອກເດືອນ</label>
+                            <div class="flex gap-2">
+                                <input type="month" v-model="filterMonth" class="flex-1 md:w-auto border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-11">
+                                <button @click="filterMonth = ''" class="px-4 py-2.5 rounded-xl font-bold text-sm transition-colors border h-11"
+                                    :class="!filterMonth ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'">ທຸກປີ</button>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-auto flex flex-col gap-1.5 flex-1 md:flex-none">
+                            <label class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">ເລືອກໝວດໝູ່</label>
+                            <select v-model="filterCategory" class="w-full md:w-[200px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-11">
+                                <option value="">-- ເບິ່ງທັງໝົດ --</option>
+                                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+                            </select>
+                        </div>
+                        <div class="hidden md:flex ml-auto">
+                            <button v-if="filterMonth || filterCategory" @click="filterMonth = ''; filterCategory = '';" class="text-sm text-blue-600 hover:text-blue-800 font-bold px-4 py-2 hover:bg-blue-50 rounded-xl transition-colors mt-5">
+                                ล้างການກັ່ນຕອງ
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 💻 Desktop Table View -->
+                    <div class="hidden md:block bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-gray-100 overflow-hidden">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50/80 border-b border-gray-100">
+                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ວັນທີ</th>
+                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ປະເພດ</th>
+                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ໝວດໝູ່</th>
+                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ລາຍລະອຽດ</th>
+                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">ຈຳນວນເງິນ</th>
+                                    <th v-if="user.role === 'admin'" class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center w-24">ຈັດການ</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-50">
+                                <tr v-if="filteredTransactions.length === 0">
+                                    <td :colspan="user.role === 'admin' ? 6 : 5" class="p-12 text-center text-gray-500">
+                                        <div class="flex flex-col items-center justify-center">
+                                            <i class="ph ph-file-dashed text-4xl text-gray-300 mb-3"></i>
+                                            <span class="font-medium">{{ transactions.length === 0 ? (isLoading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : 'ຍັງບໍ່ມີຂໍ້ມູນໃນລະບົບ') : 'ບໍ່ພົບຂໍ້ມູນໃນເງື່ອນໄຂທີ່ເລືອກ' }}</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr v-for="t in filteredTransactions" :key="t.id" class="hover:bg-blue-50/30 transition-colors group">
+                                    <td class="p-4 text-sm text-gray-800 whitespace-nowrap font-medium">{{ t.date }}</td>
+                                    <td class="p-4 text-sm whitespace-nowrap">
+                                        <span class="px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide" :class="t.type === 'income' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
+                                            {{ t.type === 'income' ? 'ລາຍຮັບ' : 'ລາຍຈ່າຍ' }}
+                                        </span>
+                                    </td>
+                                    <td class="p-4 text-sm text-gray-700 whitespace-nowrap">{{ t.category }}</td>
+                                    <td class="p-4 text-sm text-gray-600 max-w-[300px] truncate" :title="t.description">{{ t.description }}</td>
+                                    <td class="p-4 text-sm font-bold text-right whitespace-nowrap" :class="t.type === 'income' ? 'text-green-600' : 'text-red-600'">
+                                        {{ t.type === 'income' ? '+' : '-' }}{{ formatMoney(t.amount) }}
+                                    </td>
+                                    <td v-if="user.role === 'admin'" class="p-4">
+                                        <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button @click="handleEdit(t)" :disabled="isLoading" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"><i class="ph ph-pencil-simple text-lg"></i></button>
+                                            <button @click="handleDelete(t.id)" :disabled="isLoading" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"><i class="ph ph-trash text-lg"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 📱 Mobile Card View -->
+                    <div class="md:hidden space-y-3 pb-6">
+                        <div v-if="filteredTransactions.length === 0" class="bg-white rounded-2xl p-8 text-center border border-gray-100">
+                            <i class="ph ph-file-dashed text-4xl text-gray-300 mb-2"></i>
+                            <p class="text-gray-500 font-medium text-sm">{{ transactions.length === 0 ? 'ຍັງບໍ່ມີຂໍ້ມູນ' : 'ບໍ່ພົບຂໍ້ມູນ' }}</p>
+                        </div>
+                        <div v-for="t in filteredTransactions" :key="t.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 active:scale-[0.99] transition-transform">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-2.5">
+                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="t.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'">
+                                        <i class="ph text-xl" :class="t.type === 'income' ? 'ph-arrow-down-left' : 'ph-arrow-up-right'"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-bold text-gray-800 text-sm">{{ t.category }}</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">{{ t.date }}</p>
+                                    </div>
+                                </div>
+                                <div class="font-bold text-base" :class="t.type === 'income' ? 'text-green-600' : 'text-red-600'">
+                                    {{ t.type === 'income' ? '+' : '-' }}{{ formatMoney(t.amount) }}
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-600 bg-gray-50/50 p-3 rounded-xl border border-gray-50 leading-relaxed">{{ t.description }}</div>
+                            <div v-if="user.role === 'admin'" class="mt-3 pt-3 border-t border-gray-100 flex justify-end gap-2">
+                                <button @click="handleEdit(t)" class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl active:bg-blue-100"><i class="ph ph-pencil-simple text-lg"></i> ແກ້ໄຂ</button>
+                                <button @click="handleDelete(t.id)" class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 rounded-xl active:bg-red-100"><i class="ph ph-trash text-lg"></i> លຶບ</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Print View -->
+                <div v-if="currentView === 'print'" class="p-4 md:p-8 max-w-5xl mx-auto h-full flex flex-col">
+                    <div class="print-hidden mb-6">
+                        <h1 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2"><i class="ph-fill ph-printer text-blue-600"></i> ພິມບົດສະຫຼຸບ</h1>
+                        <p class="text-gray-500 text-sm">ຕັ້ງຄ່າຂໍ້ມູນກ່ອນສັ່ງພິມລົງເຈ້ຍ</p>
+                    </div>
+
+                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row flex-wrap gap-4 items-end print-hidden mb-6">
+                        <div class="w-full md:flex-1 md:min-w-[200px]">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ຫົວຂໍ້ບົດສະຫຼຸບ</label>
+                            <input type="text" v-model="reportTitle" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-12" />
+                        </div>
+                        <div class="w-full md:w-auto">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ໝວດໝູ່</label>
+                            <select v-model="reportCategory" class="w-full md:min-w-[160px] border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-12">
+                                <option value="">-- ທັງໝົດ --</option>
+                                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-auto">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ເດືອນ</label>
+                            <div class="flex gap-2">
+                                <input type="month" v-model="reportMonth" class="flex-1 md:w-auto border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-12" />
+                                <button @click="reportMonth = ''" class="px-4 py-3 rounded-xl font-bold text-sm transition-colors border h-12 whitespace-nowrap"
+                                    :class="!reportMonth ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'">ທຸກປີ</button>
+                            </div>
+                        </div>
+                        <div class="w-full md:w-auto">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ຍອດຍົກມາ (ກີບ)</label>
+                            <input type="number" v-model="carriedForward" placeholder="0" class="w-full md:min-w-[150px] border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold bg-gray-50 h-12" />
+                        </div>
+                        <div class="w-full md:w-auto flex flex-col mt-2 md:mt-0">
+                            <button @click="handlePrint" class="w-full flex items-center justify-center gap-2 bg-gradient-to-tr from-blue-600 to-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-transform active:scale-95 shadow-lg shadow-blue-500/30 h-12">
+                                <i class="ph ph-printer text-xl"></i> ສັ່ງພິມ
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Printable Area (Hidden on mobile, only shows when printing or on desktop) -->
+                    <div class="hidden md:block print-area bg-white p-12 rounded-2xl shadow-sm border border-gray-200 print:border-none print:shadow-none min-h-[800px] flex-col">
+                        <div id="printable-area">
+                            <div class="text-center mb-10">
+                                <h1 class="text-3xl font-bold mb-2 text-gray-900">{{ reportTitle }}</h1>
+                                <p class="text-lg text-gray-700 font-bold">ພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ</p>
+                                <p class="text-sm text-gray-600 mt-3 font-medium">ປະຈຳເດືອນ: <span class="font-bold border-b border-gray-800 inline-block px-3">{{ getLaoMonthYear(reportMonth) }}</span></p>
+                                <p v-if="reportCategory" class="text-sm text-gray-600 mt-1.5 font-medium">ໝວດໝູ່: <span class="font-bold border-b border-gray-800 inline-block px-3">{{ reportCategory }}</span></p>
+                            </div>
+
+                            <table class="w-full text-left border-collapse border border-gray-800 mb-8 text-sm">
+                                <thead>
+                                    <tr class="bg-gray-100">
+                                        <th class="border border-gray-800 p-3 font-bold text-center w-12">ລ/ດ</th>
+                                        <th class="border border-gray-800 p-3 font-bold">ວັນທີ</th>
+                                        <th class="border border-gray-800 p-3 font-bold">ລາຍການ / ລາຍລະອຽດ</th>
+                                        <th class="border border-gray-800 p-3 font-bold">ໝວດໝູ່</th>
+                                        <th class="border border-gray-800 p-3 font-bold text-right w-36">ລາຍຮັບ (ກີບ)</th>
+                                        <th class="border border-gray-800 p-3 font-bold text-right w-36">ລາຍຈ່າຍ (ກີບ)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-if="Number(carriedForward) !== 0" class="bg-gray-50/80">
+                                        <td class="border border-gray-800 p-2.5 text-center text-gray-500">-</td>
+                                        <td class="border border-gray-800 p-2.5 text-gray-500">-</td>
+                                        <td class="border border-gray-800 p-2.5 font-bold text-gray-800">ຍອດຍົກມາຈາກເດືອນກ່ອນ</td>
+                                        <td class="border border-gray-800 p-2.5 text-gray-500">-</td>
+                                        <td class="border border-gray-800 p-2.5 text-right font-bold text-blue-700">
+                                            {{ Number(carriedForward) > 0 ? formatMoney(Number(carriedForward)).replace('₭','') : '-' }}
+                                        </td>
+                                        <td class="border border-gray-800 p-2.5 text-right font-bold text-red-600">
+                                            {{ Number(carriedForward) < 0 ? formatMoney(Math.abs(Number(carriedForward))).replace('₭','') : '-' }}
+                                        </td>
+                                    </tr>
+                                    <tr v-if="filteredTransactions.length === 0">
+                                        <td colspan="6" class="border border-gray-800 p-6 text-center text-gray-500 italic">ບໍ່ມີລາຍການເຄື່ອນໄຫວໃນຊ່ວງເວລານີ້</td>
+                                    </tr>
+                                    <tr v-for="(t, index) in filteredTransactions" :key="t.id" class="hover:bg-gray-50/50">
+                                        <td class="border border-gray-800 p-2.5 text-center">{{ index + 1 }}</td>
+                                        <td class="border border-gray-800 p-2.5">{{ t.date }}</td>
+                                        <td class="border border-gray-800 p-2.5">{{ t.description }}</td>
+                                        <td class="border border-gray-800 p-2.5">{{ t.category }}</td>
+                                        <td class="border border-gray-800 p-2.5 text-right">{{ t.type === 'income' ? formatMoney(t.amount).replace('₭','') : '-' }}</td>
+                                        <td class="border border-gray-800 p-2.5 text-right">{{ t.type === 'expense' ? formatMoney(t.amount).replace('₭','') : '-' }}</td>
+                                    </tr>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-gray-50 font-bold">
+                                        <td colspan="4" class="border border-gray-800 p-3 text-right">ລວມລາຍຮັບ-ລາຍຈ່າຍເດືອນນີ້:</td>
+                                        <td class="border border-gray-800 p-3 text-right">{{ formatMoney(totalIncome).replace('₭','') }}</td>
+                                        <td class="border border-gray-800 p-3 text-right">{{ formatMoney(totalExpense).replace('₭','') }}</td>
+                                    </tr>
+                                    <tr class="font-bold text-base">
+                                        <td colspan="4" class="border border-gray-800 p-4 text-right bg-gray-100">ຍອດຄົງເຫຼືອລວມຍອດຍົກມາ:</td>
+                                        <td colspan="2" class="border border-gray-800 p-4 text-center text-lg bg-gray-100" :class="(balance + Number(carriedForward || 0)) >= 0 ? 'text-gray-900' : 'text-red-600'">
+                                            {{ formatMoney(balance + Number(carriedForward || 0)) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+
+                            <div class="mt-16 grid grid-cols-2 gap-8 text-center text-sm print-break-avoid">
+                                <div>
+                                    <p class="font-bold mb-20 text-gray-800">ພະນັກງານຄິດໄລ່</p>
+                                    <div class="w-48 border-b border-gray-800 mx-auto border-dotted"></div>
+                                    <p class="mt-2 text-gray-600 font-medium">(..........................................)</p>
+                                    <p class="mt-1 text-gray-500">ວັນທີ: ....../....../..........</p>
+                                </div>
+                                <div>
+                                    <p class="font-bold mb-20 text-gray-800">ຫົວໜ້າພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ</p>
+                                    <div class="w-48 border-b border-gray-800 mx-auto border-dotted"></div>
+                                    <p class="mt-2 text-gray-600 font-medium">(..........................................)</p>
+                                    <p class="mt-1 text-gray-500">ວັນທີ: ....../....../..........</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Mobile Print Placeholder -->
+                    <div class="md:hidden flex-1 flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-100 p-8 text-center">
+                        <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                            <i class="ph ph-printer text-4xl"></i>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-800 mb-2">ພ້ອມສັ່ງພິມແລ້ວ</h3>
+                        <p class="text-sm text-gray-500">ກົດປຸ່ມສັ່ງພິມດ້ານເທິງ ເພື່ອເບິ່ງຕົວຢ່າງ ແລະ ສັ່ງພິມອອກທາງເຄື່ອງພິມ</p>
+                    </div>
+                </div>
+
+            </main>
+        </template>
+
+        <!-- ================= MODALS ================= -->
+        <!-- Add/Edit Modal (Bottom Sheet on Mobile, Centered on Desktop) -->
+        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-end md:items-center justify-center z-[70] p-0 md:p-4">
+            <div class="bg-white w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
+                <!-- Mobile Handle -->
+                <div class="w-full flex justify-center pt-3 pb-1 md:hidden">
+                    <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+                </div>
+                
+                <div class="px-6 py-4 md:py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                    <h2 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+                        <i class="ph text-xl text-blue-600" :class="editingData ? 'ph-pencil-simple' : 'ph-plus-circle'"></i>
+                        {{ editingData ? 'ແກ້ໄຂຂໍ້ມູນ' : 'ເພີ່ມລາຍການໃໝ່' }}
+                    </h2>
+                    <button @click="isModalOpen = false" class="text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
+                        <i class="ph ph-x text-lg font-bold"></i>
+                    </button>
+                </div>
+                
+                <form @submit.prevent="handleSave" class="p-6 overflow-y-auto space-y-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">ວັນທີ</label>
+                        <input type="date" v-model="formData.date" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 text-sm" required />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">ປະເພດ</label>
+                            <div class="relative">
+                                <select v-model="formData.type" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 appearance-none text-sm font-medium" :class="formData.type==='income' ? 'text-green-700' : 'text-red-700'">
+                                    <option value="income">ລາຍຮັບ (+)</option>
+                                    <option value="expense">ລາຍຈ່າຍ (-)</option>
+                                </select>
+                                <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">ໝວດໝູ່</label>
+                            <div class="relative">
+                                <select v-model="formData.category" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 appearance-none text-sm">
+                                    <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
+                                </select>
+                                <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">ຈຳນວນເງິນ (ກີບ)</label>
+                        <div class="relative">
+                            <input type="number" min="0" v-model="formData.amount" class="w-full border border-gray-200 rounded-xl py-3.5 pl-4 pr-12 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 font-bold text-gray-800 text-lg" placeholder="0" required />
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₭</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">ລາຍລະອຽດ / ໝາຍເຫດ</label>
+                        <textarea rows="3" v-model="formData.description" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-gray-50 text-sm" placeholder="ປ້ອນລາຍລະອຽດ..."></textarea>
+                    </div>
+
+                    <div class="pt-2 pb-safe flex gap-3">
+                        <button type="button" @click="isModalOpen = false" class="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 p-4 rounded-xl font-bold transition-colors">ຍົກເລີກ</button>
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold transition-colors shadow-md shadow-blue-500/20 flex justify-center items-center gap-2">
+                            <i class="ph ph-floppy-disk text-lg"></i> ບັນທຶກລົງ Sheet
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div v-if="isSettingsOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 md:p-8 transform transition-all">
+                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><i class="ph-fill ph-gear text-2xl"></i></div>
+                    ຕັ້ງຄ່າການເຊື່ອມຕໍ່ Sheet
+                </h2>
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Google Apps Script Web App URL</label>
+                    <input type="text" v-model="tempSheetUrl" placeholder="https://script.google.com/macros/s/..." class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono bg-gray-50" />
+                    <div class="mt-3 text-xs text-blue-800 bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
+                        <i class="ph-fill ph-info text-xl shrink-0"></i>
+                        <p class="leading-relaxed">ລະບົບຈະຈື່ URL ນີ້ໄວ້ໃນເຄື່ອງ. ຖ້າທ່ານຕ້ອງການໃຊ້ຄ່າເລີ່ມຕົ້ນຈາກໂຄ້ດ ໃຫ້ລຶບຊ່ອງນີ້ໃຫ້ວ່າງເປົ່າແລ້ວກົດບັນທຶກ.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 justify-end">
+                    <button @click="isSettingsOpen = false" class="px-6 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold transition-colors">ປິດ</button>
+                    <button @click="saveSettings" class="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-md shadow-blue-500/20">ບັນທຶກການຕັ້ງຄ່າ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alert Modal -->
+        <div v-if="alertMessage" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+            <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <i class="ph-fill ph-warning-circle text-4xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">ແຈ້ງເຕືອນ</h3>
+                <p class="text-gray-600 mb-8 whitespace-pre-wrap text-sm leading-relaxed">{{ alertMessage }}</p>
+                <button @click="alertMessage = ''" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-xl transition-colors">ປິດໜ້າຕ່າງ</button>
+            </div>
+        </div>
+
+        <!-- Confirm Modal -->
+        <div v-if="confirmDialog.isOpen" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
+            <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+                <div class="w-16 h-16 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <i class="ph-fill ph-warning text-4xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">ຢືນຢັນການລຶບ</h3>
+                <p class="text-gray-600 mb-8 text-sm leading-relaxed">{{ confirmDialog.message }}</p>
+                <div class="flex gap-3">
+                    <button @click="confirmDialog.isOpen = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-xl transition-colors">ຍົກເລີກ</button>
+                    <button @click="executeConfirm" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-red-500/30">ຢືນຢັນລຶບ</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Logic using Vue 3 -->
+    <script>
+        const { createApp, ref, computed, onMounted } = Vue;
+
+        const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxl9iY53p8C7yRdkrhVzn4Vx47Ra1-yqcmHpbnfHrQy1lsfcxxqlHiFCrC_U3cWb-ZR/exec';
+
+        const generateId = () => {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        };
+
+        const CATEGORIES = ['ເງີນອອກໂຄສະນາ', 'ເງີນບໍລິຫານ', 'ເງີນມ້ວນ', 'ເງີນເກັບ20ພັນ', 'ອື່ນໆ'];
+
+        createApp({
+            setup() {
+                // State
+                const user = ref(null);
+                const transactions = ref([]);
+                const currentView = ref('dashboard');
+                
+                const loginUsername = ref('');
+                const loginPassword = ref('');
+                const loginError = ref('');
+                const isLoggingIn = ref(false);
+
+                const alertMessage = ref('');
+                const confirmDialog = ref({ isOpen: false, message: '', onConfirm: null });
+
+                const sheetUrl = ref(localStorage.getItem('sheetUrl') || DEFAULT_SHEET_URL);
+                const isSettingsOpen = ref(false);
+                const tempSheetUrl = ref(sheetUrl.value);
+                const isLoading = ref(false);
+
+                // Dashboard Filters
+                const filterMonth = ref('');
+                const filterCategory = ref('');
+
+                // Modal Form
+                const isModalOpen = ref(false);
+                const editingData = ref(null);
+                const formData = ref({ date: '', type: 'income', category: CATEGORIES[0], amount: '', description: '' });
+
+                // Print State
+                const reportMonth = ref('');
+                const reportCategory = ref('');
+                const reportTitle = ref('ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ');
+                const carriedForward = ref('');
+
+                const categories = CATEGORIES;
+
+                // Methods
+                const formatMoney = (amount) => {
+                    return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(amount || 0);
+                };
+
+                const showAlert = (msg) => alertMessage.value = msg;
+                const showConfirm = (msg, onConfirm) => confirmDialog.value = { isOpen: true, message: msg, onConfirm };
+                const executeConfirm = () => {
+                    if (confirmDialog.value.onConfirm) confirmDialog.value.onConfirm();
+                    confirmDialog.value.isOpen = false;
+                };
+
+                const saveSettings = () => {
+                    const url = tempSheetUrl.value.trim();
+                    if (url === '') {
+                        localStorage.removeItem('sheetUrl');
+                        sheetUrl.value = DEFAULT_SHEET_URL;
+                    } else {
+                        localStorage.setItem('sheetUrl', url);
+                        sheetUrl.value = url;
+                    }
+                    isSettingsOpen.value = false;
+                };
+
+                const handleLogin = async () => {
+                    if (!sheetUrl.value) {
+                        loginError.value = 'ກະລຸນາຕັ້ງຄ່າ URL ຂອງ Google Sheet ກ່ອນ';
+                        return;
+                    }
+                    isLoggingIn.value = true;
+                    loginError.value = '';
+
+                    try {
+                        const response = await fetch(sheetUrl.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'login', data: { username: loginUsername.value, password: loginPassword.value } })
+                        });
+                        const result = await response.json();
+
+                        if (result.success) {
+                            user.value = { role: result.role, username: loginUsername.value };
+                            currentView.value = 'dashboard';
+                            fetchTransactions(); // Fetch data after login
+                        } else {
+                            loginError.value = result.error || 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ';
+                        }
+                    } catch (error) {
+                        loginError.value = 'ບໍ່ສາມາດເຊື່ອມຕໍ່ລະບົບໄດ້. ກະລຸນາກວດສອບອິນເຕີເນັດ ຫຼື API';
+                    } finally {
+                        isLoggingIn.value = false;
+                    }
+                };
+
+                const logout = () => {
+                    user.value = null;
+                    loginUsername.value = '';
+                    loginPassword.value = '';
+                    loginError.value = '';
+                    currentView.value = 'dashboard';
+                };
+
+                const fetchTransactions = async () => {
+                    if (!sheetUrl.value) return;
+                    isLoading.value = true;
+                    try {
+                        const response = await fetch(sheetUrl.value);
+                        if (!response.ok) throw new Error('Network response error');
+                        const data = await response.json();
+                        
+                        if (data.error) throw new Error(data.error);
+
+                        transactions.value = data.map(row => {
+                            let formattedDate = '';
+                            if (row.Date) {
+                                const d = new Date(row.Date);
+                                if (!isNaN(d.getTime())) {
+                                    formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                                } else {
+                                    formattedDate = String(row.Date).split('T')[0];
+                                }
+                            }
+                            return {
+                                id: row.ID,
+                                date: formattedDate,
+                                type: String(row.Type).toLowerCase().trim() === 'income' ? 'income' : 'expense',
+                                category: row.Category ? String(row.Category).trim() : '',
+                                description: row.Description ? String(row.Description).trim() : '',
+                                amount: Number(row.Amount) || 0,
+                                addedBy: row.AddedBy
+                            };
+                        });
+                    } catch (error) {
+                        showAlert('ບໍ່ສາມາດດຶງຂໍ້ມູນຈາກ Google Sheet ໄດ້.\nອາດເກີດຈາກ URL ບໍ່ຖືກຕ້ອງ ຫຼື ອິນເຕີເນັດມີບັນຫາ.');
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                const syncToSheet = async (action, transactionData) => {
+                    if (!sheetUrl.value) return true; 
+                    
+                    let sheetPayload;
+                    if (action === 'delete') {
+                        sheetPayload = { id: transactionData.id };
+                    } else {
+                        sheetPayload = {
+                            ID: transactionData.id,
+                            Date: transactionData.date,
+                            Type: transactionData.type === 'income' ? 'Income' : 'Expense',
+                            Category: transactionData.category,
+                            Description: transactionData.description,
+                            Amount: transactionData.amount,
+                            SlipUrl: '', Remark: '',  
+                            AddedBy: user.value.username,
+                            Timestamp: new Date().toISOString()
+                        };
+                    }
+
+                    try {
+                        const response = await fetch(sheetUrl.value, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action, data: sheetPayload })
+                        });
+                        const result = await response.json();
+                        if (result.error) throw new Error(result.error);
+                        return result.success;
+                    } catch (error) {
+                        showAlert('ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Google Sheet:\n' + error.message);
+                        return false;
+                    }
+                };
+
+                const handleDelete = (id) => {
+                    if (!id) {
+                        showAlert('ບໍ່ສາມາດລຶບລາຍການນີ້ໄດ້ ເນື່ອງຈາກບໍ່ມີລະຫັດ. ກະລຸນາລຶບໃນ Sheet ໂດຍກົງ.');
+                        return;
+                    }
+                    showConfirm('ທ່ານຕ້ອງການລຶບລາຍການນີ້ແທ້ບໍ່? ການລຶບນີ້ຈະລຶບອອກຈາກ Google Sheet ພ້ອມ.', async () => {
+                        const previousData = [...transactions.value];
+                        transactions.value = transactions.value.filter(t => t.id !== id);
+                        const success = await syncToSheet('delete', { id });
+                        if (!success) transactions.value = previousData; 
+                    });
+                };
+
+                const openNewModal = () => {
+                    formData.value = {
+                        date: new Date().toISOString().split('T')[0],
+                        type: 'income',
+                        category: categories[0],
+                        amount: '',
+                        description: ''
+                    };
+                    editingData.value = null;
+                    isModalOpen.value = true;
+                };
+
+                const handleEdit = (transaction) => {
+                    if (!transaction.id) {
+                        showAlert('ບໍ່ສາມາດແກ້ໄຂລາຍການນີ້ໄດ້. ກະລຸນາແກ້ໄຂໃນ Google Sheet ໂດຍກົງ.');
+                        return;
+                    }
+                    formData.value = { ...transaction };
+                    editingData.value = transaction;
+                    isModalOpen.value = true;
+                };
+
+                const handleSave = async () => {
+                    if (!formData.value.date || !formData.value.amount || !formData.value.description) {
+                        showAlert('ກະລຸນາປ້ອນຂໍ້ມູນໃຫ້ຄົບຖ້ວນ');
+                        return;
+                    }
+                    
+                    isLoading.value = true;
+                    if (editingData.value) {
+                        const updatedRecord = { ...formData.value, id: editingData.value.id };
+                        transactions.value = transactions.value.map(t => t.id === editingData.value.id ? updatedRecord : t);
+                        isModalOpen.value = false;
+                        editingData.value = null;
+                        await syncToSheet('update', updatedRecord);
+                    } else {
+                        const newRecord = { ...formData.value, id: generateId() };
+                        transactions.value.push(newRecord);
+                        isModalOpen.value = false;
+                        await syncToSheet('insert', newRecord);
+                    }
+                    isLoading.value = false;
+                };
+
+                const handlePrint = () => {
+                    const content = document.getElementById('printable-area').innerHTML;
+                    const printWin = window.open('', '_blank', 'width=1000,height=800');
+                    if (printWin) {
+                        printWin.document.write(`
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <title>${reportTitle.value}</title>
+                                <script src="https://cdn.tailwindcss.com"><\/script>
+                                <style>
+                                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;700&display=swap');
+                                    body { font-family: 'Noto Sans Lao', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                                    @page { margin: 15mm; }
+                                </style>
+                            </head>
+                            <body class="p-8 text-gray-900 bg-white">
+                                ${content}
+                                <script>
+                                    window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 800); };
+                                <\/script>
+                            </body>
+                            </html>
+                        `);
+                        printWin.document.close();
+                    } else {
+                        window.print();
+                    }
+                };
+
+                const getLaoMonthYear = (ym) => {
+                    if (!ym) return 'ທັງໝົດ (ທຸກປີ)';
+                    const [year, month] = ym.split('-');
+                    return `${month}/${year}`;
+                };
+
+                // Computed Properties
+                const filteredTransactions = computed(() => {
+                    // For Dashboard
+                    if (currentView.value === 'dashboard') {
+                        return transactions.value.filter(t => {
+                            const matchMonth = filterMonth.value ? t.date.startsWith(filterMonth.value) : true;
+                            const matchCategory = filterCategory.value ? t.category === filterCategory.value : true;
+                            return matchMonth && matchCategory;
+                        }).sort((a, b) => new Date(b.date) - new Date(a.date));
+                    } 
+                    // For Print
+                    else {
+                        return transactions.value.filter(t => {
+                            const matchMonth = reportMonth.value ? t.date.startsWith(reportMonth.value) : true;
+                            const matchCategory = reportCategory.value ? t.category === reportCategory.value : true;
+                            return matchMonth && matchCategory;
+                        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+                    }
+                });
+
+                const summary = computed(() => {
+                    let income = 0; let expense = 0;
+                    filteredTransactions.value.forEach(t => {
+                        if (t.type === 'income') income += Number(t.amount);
+                        if (t.type === 'expense') expense += Number(t.amount);
+                    });
+                    return { totalIncome: income, totalExpense: expense, balance: income - expense };
+                });
+
+                const totalIncome = computed(() => summary.value.totalIncome);
+                const totalExpense = computed(() => summary.value.totalExpense);
+                const balance = computed(() => summary.value.balance);
+
+                // Initialize (check session from memory if desired, but here we require login every refresh for security, 
+                // or you could use localStorage to persist session. Here I keep it requiring login per reload.)
+                onMounted(() => {
+                    // If you want to auto-fetch when app loads (if persisted user), do it here.
+                });
+
+                return {
+                    user, transactions, currentView, 
+                    loginUsername, loginPassword, loginError, isLoggingIn, handleLogin, logout,
+                    sheetUrl, isSettingsOpen, tempSheetUrl, isLoading, saveSettings, fetchTransactions,
+                    filterMonth, filterCategory,
+                    isModalOpen, editingData, formData, openNewModal, handleEdit, handleSave, handleDelete,
+                    reportMonth, reportCategory, reportTitle, carriedForward, handlePrint, getLaoMonthYear,
+                    filteredTransactions, totalIncome, totalExpense, balance, categories, formatMoney,
+                    alertMessage, confirmDialog, executeConfirm
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
