@@ -1,950 +1,1288 @@
 <!DOCTYPE html>
 <html lang="lo">
 <head>
-    <meta charset="UTF-8">
-    <!-- ສຳຄັນ: ເຮັດໃຫ້ຮອງຮັບມືຖືເຕັມຈໍ ແລະ ບໍ່ໃຫ້ຊູມເອງ -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ລະບົບບັນຊີລາຍຮັບ-ລາຍຈ່າຍ</title>
-    
-    <!-- Tailwind CSS (ສຳລັບຕົກແຕ່ງຄວາມງາມ) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Vue 3 (ສຳລັບຈັດການລະບົບແທນ React ໃຫ້ຢູ່ໃນໄຟລ໌ດຽວ) -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Phosphor Icons (ໄອຄອນທັນສະໄໝ) -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@300;400;500;600;700&display=swap');
-        
-        body {
-            font-family: 'Noto Sans Lao', sans-serif;
-            background-color: #f8fafc;
-            -webkit-tap-highlight-color: transparent;
-        }
-        
-        /* ເຊື່ອງໂຄ້ດກ່ອນທີ່ Vue ຈະໂຫຼດແລ້ວ */
-        [v-cloak] { display: none; }
-        
-        /* ຕົກແຕ່ງ Scrollbar ໃຫ້ງາມຂຶ້ນ */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* ຕັ້ງຄ່າການພິມ */
-        @media print {
-            body { background: white !important; }
-            .print-hidden { display: none !important; }
-            .print-area { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ລະບົບບັນຊີລາຍຮັບ-ລາຍຈ່າຍ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- ລັອກເວີຊັນໄວ້ ເພື່ອບໍ່ໃຫ້ພັງເອງເມື່ອມີເວີຊັນໃໝ່ -->
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      fontFamily: { sans: ['"Noto Sans Lao"', 'system-ui', 'sans-serif'] },
+      colors: { brand: { 50:'#eef3ff', 100:'#dce6fe', 200:'#bccffd', 500:'#3a66f0', 600:'#2450d8', 700:'#1d3fae', 800:'#1c3589', 900:'#152558' } }
+    } }
+  };
+</script>
+<script src="https://unpkg.com/vue@3.5.13/dist/vue.global.prod.js"></script>
+<style>
+  [v-cloak] { display: none; }
+  html, body { background: #f3f5fa; -webkit-tap-highlight-color: transparent; }
+  .num { font-variant-numeric: tabular-nums; }
+  .spin { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .safe-t { padding-top: env(safe-area-inset-top); }
+  .safe-b { padding-bottom: env(safe-area-inset-bottom); }
+  @media (max-width: 767px) {
+    .m-pad { padding-top: calc(3.75rem + env(safe-area-inset-top)); padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+  }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #cfd6e4; border-radius: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .fade-enter-active, .fade-leave-active { transition: opacity .18s ease; }
+  .fade-enter-from, .fade-leave-to { opacity: 0; }
+  .pop-enter-active, .pop-leave-active { transition: transform .22s ease, opacity .22s ease; }
+  .pop-enter-from, .pop-leave-to { transform: translateY(16px); opacity: 0; }
+  .toast-enter-active, .toast-leave-active { transition: all .25s ease; }
+  .toast-enter-from, .toast-leave-to { transform: translateY(-10px); opacity: 0; }
+  input[type="month"], input[type="date"] { min-height: 2.75rem; }
+
+  /* ===== ການພິມ: ພິມສະເພາະເຈ້ຍລາຍງານ ຢູ່ໜ້າເດີມ (ບໍ່ເປີດ popup) ===== */
+  @media print {
+    @page { size: A4; margin: 12mm; }
+    html, body { background: #fff !important; height: auto !important; overflow: visible !important; }
+    .no-print { display: none !important; }
+    #app, #app main { height: auto !important; overflow: visible !important; padding: 0 !important; display: block !important; }
+    .print-wrap { overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+    #report-paper { box-shadow: none !important; border: 0 !important; border-radius: 0 !important; padding: 0 !important; margin: 0 !important; min-width: 0 !important; max-width: none !important; }
+    #report-paper * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    #report-paper tr, .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+  }
+</style>
 </head>
-<body class="text-gray-800 antialiased selection:bg-blue-200 selection:text-blue-900">
+<body class="font-sans text-slate-800 antialiased">
 
-    <div id="app" v-cloak class="h-screen w-full flex flex-col md:flex-row overflow-hidden">
+<div id="app" v-cloak class="h-[100dvh] w-full flex flex-col md:flex-row overflow-hidden">
 
-        <!-- ================= LOGIN SCREEN ================= -->
-        <div v-if="!user" class="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div class="bg-white p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] max-w-md w-full text-center border border-gray-100">
-                <div class="w-20 h-20 bg-gradient-to-tr from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30 transform rotate-3">
-                    <i class="ph ph-wallet text-4xl -rotate-3"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-gray-800 mb-1">ລະບົບບັນຊີລາຍຮັບ-ລາຍຈ່າຍ</h1>
-                <p class="text-gray-500 mb-8 font-medium text-sm">ພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ</p>
-                
-                <form @submit.prevent="handleLogin" class="space-y-5 text-left">
-                    <div v-if="loginError" class="bg-red-50 text-red-600 p-3.5 rounded-xl text-sm text-center border border-red-100 font-medium flex items-center justify-center gap-2">
-                        <i class="ph-fill ph-warning-circle text-lg"></i> {{ loginError }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">ຊື່ຜູ້ໃຊ້ (Username)</label>
-                        <div class="relative">
-                            <i class="ph ph-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
-                            <input type="text" v-model="loginUsername" :disabled="isLoggingIn" required
-                                class="w-full border border-gray-200 rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50/50 transition-all"
-                                placeholder="ປ້ອນຊື່ຜູ້ໃຊ້">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">ລະຫັດຜ່ານ (Password)</label>
-                        <div class="relative">
-                            <i class="ph ph-lock-key absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg"></i>
-                            <input type="password" v-model="loginPassword" :disabled="isLoggingIn" required
-                                class="w-full border border-gray-200 rounded-xl py-3.5 pl-11 pr-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50/50 transition-all"
-                                placeholder="ປ້ອນລະຫັດຜ່ານ">
-                        </div>
-                    </div>
-                    <button type="submit" :disabled="isLoggingIn"
-                        class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white p-4 rounded-xl font-bold transition-all shadow-md shadow-blue-500/20 mt-4 disabled:opacity-70 disabled:cursor-not-allowed">
-                        <i v-if="isLoggingIn" class="ph ph-spinner animate-spin text-xl"></i>
-                        {{ isLoggingIn ? 'ກຳລັງກວດສອບ...' : 'ເຂົ້າສູ່ລະບົບ' }}
-                    </button>
-                </form>
-            </div>
+  <!-- ======================= LOGIN ======================= -->
+  <div v-if="!session" class="fixed inset-0 overflow-y-auto bg-gradient-to-br from-brand-900 via-brand-800 to-brand-600">
+    <div class="min-h-full flex items-center justify-center p-4 safe-t safe-b">
+      <div class="w-full max-w-sm py-8">
+        <div class="text-center text-white mb-7">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-white/15 ring-1 ring-white/25 flex items-center justify-center mb-4">
+            <app-icon name="wallet" :size="30"></app-icon>
+          </div>
+          <h1 class="text-xl font-bold">ລະບົບບັນຊີລາຍຮັບ-ລາຍຈ່າຍ</h1>
+          <p class="text-sm text-white/70 mt-1">{{ ORG_NAME }}</p>
         </div>
 
-        <!-- ================= MAIN APP ================= -->
-        <template v-else>
-            <!-- 📱 Mobile Header (Fixed Top) -->
-            <header class="md:hidden bg-white border-b border-gray-100 h-16 fixed top-0 w-full z-20 flex items-center justify-between px-4 print-hidden shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                        <i class="ph ph-wallet text-lg"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-md font-bold text-gray-800 leading-tight">ລະບົບບັນຊີ</h2>
-                        <p class="text-[10px] text-gray-500 font-medium leading-tight">ພະແນກໂຄສະນາ</p>
-                    </div>
-                </div>
-                <!-- ໄຟສະຖານະການເຊື່ອມຕໍ່ (Mobile) -->
-                <div class="flex items-center gap-1.5 bg-gray-50 px-2.5 py-1.5 rounded-full border border-gray-100">
-                    <span class="relative flex h-2.5 w-2.5">
-                        <span v-if="sheetUrl" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="sheetUrl ? 'bg-green-500' : 'bg-red-500'"></span>
-                    </span>
-                    <span class="text-xs font-semibold" :class="sheetUrl ? 'text-green-700' : 'text-red-600'">
-                        {{ sheetUrl ? 'ອອນລາຍ' : 'ອອຟລາຍ' }}
-                    </span>
-                </div>
-            </header>
-
-            <!-- 💻 Desktop Sidebar -->
-            <aside class="hidden md:flex w-64 bg-white border-r border-gray-100 flex-col print-hidden z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full">
-                <div class="p-6 border-b border-gray-100 flex items-center gap-3">
-                    <div class="w-11 h-11 bg-gradient-to-tr from-blue-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                        <i class="ph ph-wallet text-2xl"></i>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold text-gray-800">ລະບົບບັນຊີ</h2>
-                        <p class="text-xs text-gray-500 font-medium">ພະແນກໂຄສະນາ</p>
-                    </div>
-                </div>
-                
-                <nav class="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                    <button @click="currentView = 'dashboard'"
-                        class="w-full flex items-center gap-3 p-3.5 rounded-xl transition-all font-medium"
-                        :class="currentView === 'dashboard' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'">
-                        <i class="ph ph-squares-four text-xl" :class="currentView === 'dashboard' ? 'ph-fill' : ''"></i>
-                        ໜ້າຫຼັກ / ຂໍ້ມູນ
-                    </button>
-                    
-                    <button v-if="user.role === 'admin'" @click="currentView = 'print'"
-                        class="w-full flex items-center gap-3 p-3.5 rounded-xl transition-all font-medium"
-                        :class="currentView === 'print' ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'">
-                        <i class="ph ph-printer text-xl" :class="currentView === 'print' ? 'ph-fill' : ''"></i>
-                        ພິມບົດສະຫຼຸບ
-                    </button>
-                    
-                    <div v-if="user.role === 'admin'" class="pt-4 mt-4 border-t border-gray-100">
-                        <button @click="isSettingsOpen = true"
-                            class="w-full flex items-center gap-3 p-3.5 rounded-xl transition-all font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent hover:border-gray-200">
-                            <i class="ph ph-gear text-xl"></i>
-                            ຕັ້ງຄ່າ API Sheet
-                        </button>
-                    </div>
-                </nav>
-
-                <div class="p-4 border-t border-gray-100 bg-gray-50/50 m-4 rounded-2xl">
-                    <div class="flex items-center gap-3 mb-4 px-1">
-                        <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-gray-200 text-gray-700'">
-                            <i class="ph text-xl" :class="user.role === 'admin' ? 'ph-shield-check' : 'ph-user'"></i>
-                        </div>
-                        <div class="overflow-hidden">
-                            <p class="text-sm font-bold text-gray-800 truncate">
-                                {{ user.role === 'admin' ? 'ແອັດມິນ (Admin)' : 'ສະມາຊິກ (Member)' }}
-                            </p>
-                            <p class="text-[11px] flex items-center gap-1.5 mt-0.5">
-                                <span class="w-2 h-2 rounded-full" :class="sheetUrl ? 'bg-green-500' : 'bg-red-500'"></span>
-                                <span class="truncate" :class="sheetUrl ? 'text-green-600' : 'text-red-600'">
-                                    {{ sheetUrl ? 'ເຊື່ອມຕໍ່ Sheet ແລ້ວ' : 'ຍັງບໍ່ເຊື່ອມຕໍ່ (Offline)' }}
-                                </span>
-                            </p>
-                        </div>
-                    </div>
-                    <button @click="logout" class="w-full flex items-center justify-center gap-2 text-red-600 bg-red-50/80 hover:bg-red-100 p-3 rounded-xl transition-colors font-bold text-sm">
-                        <i class="ph ph-sign-out text-lg"></i> ອອກຈາກລະບົບ
-                    </button>
-                </div>
-            </aside>
-
-            <!-- 📱 Mobile Bottom Nav -->
-            <nav class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-100 flex justify-around items-center h-16 pb-safe z-30 print-hidden shadow-[0_-4px_24px_rgba(0,0,0,0.03)]">
-                <button @click="currentView = 'dashboard'" class="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors" :class="currentView === 'dashboard' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'">
-                    <i class="ph text-2xl" :class="currentView === 'dashboard' ? 'ph-fill ph-squares-four' : 'ph-squares-four'"></i>
-                    <span class="text-[10px] font-bold">ໜ້າຫຼັກ</span>
-                </button>
-                
-                <button v-if="user.role === 'admin'" @click="openNewModal" class="flex-none -mt-6 bg-gradient-to-tr from-blue-600 to-blue-500 text-white h-14 w-14 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-[#f8fafc] active:scale-95 transition-transform">
-                    <i class="ph ph-plus text-2xl"></i>
-                </button>
-                
-                <button v-if="user.role === 'admin'" @click="currentView = 'print'" class="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors" :class="currentView === 'print' ? 'text-blue-600' : 'text-gray-500 hover:text-gray-800'">
-                    <i class="ph text-2xl" :class="currentView === 'print' ? 'ph-fill ph-printer' : 'ph-printer'"></i>
-                    <span class="text-[10px] font-bold">ພິມບົດສະຫຼຸບ</span>
-                </button>
-                
-                <button v-if="user.role === 'member'" @click="logout" class="flex-1 flex flex-col items-center justify-center gap-1 h-full transition-colors text-red-500">
-                    <i class="ph ph-sign-out text-2xl"></i>
-                    <span class="text-[10px] font-bold">ອອກລະບົບ</span>
-                </button>
-            </nav>
-
-            <!-- 🔄 Loading Bar -->
-            <div v-if="isLoading" class="fixed top-0 left-0 w-full h-1 bg-gray-200 z-[100] print-hidden">
-                <div class="h-full bg-blue-500 animate-pulse w-full"></div>
+        <form @submit.prevent="handleLogin" class="bg-white rounded-3xl p-6 shadow-2xl shadow-black/20 space-y-4">
+          <div v-if="isDemo" class="text-xs bg-amber-50 text-amber-900 border border-amber-200 rounded-xl p-3 leading-relaxed">
+            <b>ໂໝດຕົວຢ່າງ</b> · ຍັງບໍ່ໄດ້ເຊື່ອມ Google Sheet<br>
+            Admin: <b>admin</b> / <b>1234</b> &nbsp;·&nbsp; Member: <b>member</b> / <b>1234</b>
+          </div>
+          <div v-if="login.error" class="flex items-center gap-2 bg-rose-50 text-rose-700 border border-rose-100 rounded-xl p-3 text-sm font-medium">
+            <app-icon name="alert" :size="18"></app-icon><span>{{ login.error }}</span>
+          </div>
+          <label class="block">
+            <span class="block text-sm font-semibold text-slate-700 mb-1.5">ຊື່ຜູ້ໃຊ້</span>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><app-icon name="user" :size="18"></app-icon></span>
+              <input v-model="login.username" :disabled="login.busy" required autocomplete="username" autocapitalize="off"
+                class="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100 transition" placeholder="ປ້ອນຊື່ຜູ້ໃຊ້">
             </div>
+          </label>
+          <label class="block">
+            <span class="block text-sm font-semibold text-slate-700 mb-1.5">ລະຫັດຜ່ານ</span>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><app-icon name="lock" :size="18"></app-icon></span>
+              <input v-model="login.password" :type="login.show ? 'text' : 'password'" :disabled="login.busy" required autocomplete="current-password"
+                class="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-12 outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100 transition" placeholder="ປ້ອນລະຫັດຜ່ານ">
+              <button type="button" @click="login.show = !login.show" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-lg text-slate-400 hover:text-slate-700 flex items-center justify-center" :aria-label="login.show ? 'ເຊື່ອງລະຫັດ' : 'ສະແດງລະຫັດ'">
+                <app-icon :name="login.show ? 'eyeOff' : 'eye'" :size="18"></app-icon>
+              </button>
+            </div>
+          </label>
+          <button type="submit" :disabled="login.busy"
+            class="w-full h-12 rounded-xl bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-brand-600/25 disabled:opacity-70 transition">
+            <app-icon v-if="login.busy" name="loader" :size="18" class="spin"></app-icon>
+            {{ login.busy ? 'ກຳລັງກວດສອບ...' : 'ເຂົ້າສູ່ລະບົບ' }}
+          </button>
+        </form>
+        <p class="text-center text-xs text-white/50 mt-5">ການເຂົ້າສູ່ລະບົບຈະໝົດອາຍຸອັດຕະໂນມັດ ເພື່ອຄວາມປອດໄພ</p>
+      </div>
+    </div>
+  </div>
 
-            <!-- 📌 Main Content Area -->
-            <main class="flex-1 h-full overflow-y-auto relative bg-[#f8fafc] pt-16 md:pt-0 pb-20 md:pb-0 print:p-0 print:m-0 print:overflow-visible print:bg-white print:h-auto">
-                
-                <!-- Dashboard View -->
-                <div v-if="currentView === 'dashboard'" class="p-4 md:p-8 max-w-7xl mx-auto">
-                    <!-- Header -->
-                    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-6 md:mb-8 gap-4">
-                        <div class="hidden md:block">
-                            <h1 class="text-2xl font-bold text-gray-800">ແຜງຄວບຄຸມ (Dashboard)</h1>
-                            <p class="text-gray-500 text-sm mt-1">ພາບລວມລາຍຮັບ-ລາຍຈ່າຍ</p>
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click="fetchTransactions" :disabled="isLoading || !sheetUrl"
-                                class="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 px-4 py-2.5 md:py-2 rounded-xl transition-all shadow-sm disabled:opacity-50 font-medium text-sm">
-                                <i class="ph ph-arrows-clockwise text-lg" :class="isLoading ? 'animate-spin text-blue-600' : ''"></i>
-                                <span class="md:inline">ໂຫຼດຂໍ້ມູນໃໝ່</span>
-                            </button>
-                            <!-- ປຸ່ມເພີ່ມເທິງ Desktop -->
-                            <button v-if="user.role === 'admin'" @click="openNewModal"
-                                class="hidden md:flex flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl transition-all shadow-sm font-medium text-sm">
-                                <i class="ph ph-plus text-lg"></i> ເພີ່ມລາຍການ
-                            </button>
-                            <!-- ປຸ່ມອອກຈາກລະບົບ (ສະແດງສະເພາະມືຖືສຳລັບ admin) -->
-                            <button v-if="user.role === 'admin'" @click="logout" class="md:hidden flex-none flex items-center justify-center bg-white border border-red-200 text-red-600 w-11 rounded-xl shadow-sm active:bg-red-50">
-                                <i class="ph ph-sign-out text-lg"></i>
-                            </button>
-                        </div>
-                    </div>
+  <!-- ======================= APP ======================= -->
+  <template v-else>
 
-                    <div v-if="!sheetUrl && user.role === 'admin'" class="bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-xl mb-6 flex items-start gap-3 shadow-sm">
-                        <i class="ph-fill ph-warning-circle mt-0.5 text-orange-500 text-xl shrink-0"></i>
-                        <div>
-                            <p class="font-bold">ທ່ານຍັງບໍ່ໄດ້ເຊື່ອມຕໍ່ Google Sheet</p>
-                            <p class="text-sm mt-1 opacity-90 leading-relaxed">ກະລຸນາໄປທີ່ເມນູ <b>ຕັ້ງຄ່າ API Sheet</b> ເພື່ອໃສ່ URL ໃຫ້ລະບົບສາມາດດຶງ ແລະ ບັນທຶກຂໍ້ມູນໄດ້.</p>
-                        </div>
-                    </div>
+    <!-- Mobile header -->
+    <header class="md:hidden no-print fixed top-0 inset-x-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200/70 safe-t">
+      <div class="h-[3.75rem] px-4 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shrink-0"><app-icon name="wallet" :size="18"></app-icon></div>
+          <div class="min-w-0">
+            <p class="font-bold leading-tight truncate">{{ viewTitle }}</p>
+            <p class="text-[11px] text-slate-500 leading-tight truncate">{{ ORG_SHORT }}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border" :class="conn.pill">
+            <span class="w-2 h-2 rounded-full" :class="conn.dot"></span>{{ conn.label }}
+          </span>
+          <button @click="fetchTransactions()" :disabled="loading" class="w-10 h-10 rounded-xl flex items-center justify-center text-slate-600 active:bg-slate-100" aria-label="ໂຫຼດຂໍ້ມູນໃໝ່">
+            <app-icon name="refresh" :size="19" :class="loading ? 'spin text-brand-600' : ''"></app-icon>
+          </button>
+        </div>
+      </div>
+    </header>
 
-                    <!-- Summary Cards -->
-                    <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 mb-6 md:mb-8">
-                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 relative overflow-hidden group">
-                            <div class="w-10 h-10 md:w-14 md:h-14 bg-green-50 text-green-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                <i class="ph ph-trend-up text-xl md:text-2xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs md:text-sm text-gray-500 font-semibold mb-0.5 md:mb-1">ລາຍຮັບລວມ</p>
-                                <p class="text-lg md:text-2xl font-bold text-gray-800">{{ formatMoney(totalIncome) }}</p>
-                            </div>
-                        </div>
-                        <div class="bg-white p-4 md:p-6 rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col md:flex-row items-start md:items-center gap-3 md:gap-5 relative overflow-hidden group">
-                            <div class="w-10 h-10 md:w-14 md:h-14 bg-red-50 text-red-600 rounded-full flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                                <i class="ph ph-trend-down text-xl md:text-2xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs md:text-sm text-gray-500 font-semibold mb-0.5 md:mb-1">ລາຍຈ່າຍລວມ</p>
-                                <p class="text-lg md:text-2xl font-bold text-gray-800">{{ formatMoney(totalExpense) }}</p>
-                            </div>
-                        </div>
-                        <!-- ຍອດເຫຼືອ ກວມ 2 ຫ້ອງໃນມືຖື ໃຫ້ມັນເຕັມແຖວລຸ່ມ -->
-                        <div class="col-span-2 lg:col-span-1 bg-gradient-to-br p-4 md:p-6 rounded-2xl shadow-md border border-transparent flex items-center gap-4 md:gap-5 relative overflow-hidden group"
-                             :class="balance >= 0 ? 'from-blue-600 to-blue-700 text-white shadow-blue-500/30' : 'from-red-600 to-red-700 text-white shadow-red-500/30'">
-                            <!-- ວົງກົມປະດັບພື້ນຫຼັງ -->
-                            <div class="absolute -right-6 -top-6 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-                            
-                            <div class="w-12 h-12 md:w-14 md:h-14 bg-white/20 rounded-full flex items-center justify-center shrink-0 backdrop-blur-sm">
-                                <i class="ph ph-wallet text-2xl md:text-3xl"></i>
-                            </div>
-                            <div>
-                                <p class="text-xs md:text-sm font-medium mb-0.5 opacity-90 text-blue-50">ຍອດຄົງເຫຼືອ (ທີ່ເລືອກ)</p>
-                                <p class="text-2xl md:text-3xl font-bold tracking-tight">{{ formatMoney(balance) }}</p>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Desktop sidebar -->
+    <aside class="hidden md:flex no-print w-64 shrink-0 bg-white border-r border-slate-200/70 flex-col">
+      <div class="h-[4.5rem] px-5 flex items-center gap-3 border-b border-slate-100">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white flex items-center justify-center shadow-md shadow-brand-600/25"><app-icon name="wallet" :size="20"></app-icon></div>
+        <div class="min-w-0">
+          <p class="font-bold leading-tight">ລະບົບບັນຊີ</p>
+          <p class="text-xs text-slate-500 leading-tight truncate">{{ ORG_SHORT }}</p>
+        </div>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+        <button v-for="n in navItems" :key="n.key" @click="go(n.key)"
+          class="w-full h-11 px-3 rounded-xl flex items-center gap-3 font-medium text-[15px] transition"
+          :class="view === n.key ? 'bg-brand-50 text-brand-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'">
+          <app-icon :name="n.icon" :size="20"></app-icon>{{ n.label }}
+        </button>
+        <button v-if="isAdmin" @click="openNew()" class="w-full h-11 mt-3 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-sm shadow-brand-600/25 transition">
+          <app-icon name="plus" :size="18"></app-icon> ເພີ່ມລາຍການ
+        </button>
+      </nav>
+      <div class="m-3 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center" :class="isAdmin ? 'bg-brand-100 text-brand-700' : 'bg-slate-200 text-slate-600'">
+            <app-icon :name="isAdmin ? 'shield' : 'user'" :size="19"></app-icon>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-bold truncate">{{ session.username }}</p>
+            <p class="text-[11px] text-slate-500">{{ isAdmin ? 'ຜູ້ດູແລ (Admin)' : 'ສະມາຊິກ (ອ່ານຢ່າງດຽວ)' }}</p>
+          </div>
+          <button @click="logout" class="w-9 h-9 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center" title="ອອກຈາກລະບົບ" aria-label="ອອກຈາກລະບົບ">
+            <app-icon name="logout" :size="18"></app-icon>
+          </button>
+        </div>
+        <div class="mt-3 pt-3 border-t border-slate-200/70 flex items-center gap-2 text-[11px] font-semibold" :class="conn.text">
+          <span class="w-2 h-2 rounded-full" :class="conn.dot"></span>{{ conn.label }}
+          <span v-if="lastSync" class="ml-auto font-normal text-slate-400">{{ timeText(lastSync) }}</span>
+        </div>
+      </div>
+    </aside>
 
-                    <!-- Filters -->
-                    <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
-                        <div class="w-full md:w-auto flex flex-col gap-1.5">
-                            <label class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">ເລືອກເດືອນ</label>
-                            <div class="flex gap-2">
-                                <input type="month" v-model="filterMonth" class="flex-1 md:w-auto border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-11">
-                                <button @click="filterMonth = ''" class="px-4 py-2.5 rounded-xl font-bold text-sm transition-colors border h-11"
-                                    :class="!filterMonth ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'">ທຸກປີ</button>
-                            </div>
-                        </div>
-                        <div class="w-full md:w-auto flex flex-col gap-1.5 flex-1 md:flex-none">
-                            <label class="text-[11px] text-gray-500 font-bold uppercase tracking-wider">ເລືອກໝວດໝູ່</label>
-                            <select v-model="filterCategory" class="w-full md:w-[200px] border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-11">
-                                <option value="">-- ເບິ່ງທັງໝົດ --</option>
-                                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-                            </select>
-                        </div>
-                        <div class="hidden md:flex ml-auto">
-                            <button v-if="filterMonth || filterCategory" @click="filterMonth = ''; filterCategory = '';" class="text-sm text-blue-600 hover:text-blue-800 font-bold px-4 py-2 hover:bg-blue-50 rounded-xl transition-colors mt-5">
-                                ล้างການກັ່ນຕອງ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 💻 Desktop Table View -->
-                    <div class="hidden md:block bg-white rounded-2xl shadow-[0_2px_12px_rgb(0,0,0,0.03)] border border-gray-100 overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-gray-50/80 border-b border-gray-100">
-                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ວັນທີ</th>
-                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ປະເພດ</th>
-                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ໝວດໝູ່</th>
-                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider">ລາຍລະອຽດ</th>
-                                    <th class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">ຈຳນວນເງິນ</th>
-                                    <th v-if="user.role === 'admin'" class="p-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-center w-24">ຈັດການ</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-50">
-                                <tr v-if="filteredTransactions.length === 0">
-                                    <td :colspan="user.role === 'admin' ? 6 : 5" class="p-12 text-center text-gray-500">
-                                        <div class="flex flex-col items-center justify-center">
-                                            <i class="ph ph-file-dashed text-4xl text-gray-300 mb-3"></i>
-                                            <span class="font-medium">{{ transactions.length === 0 ? (isLoading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : 'ຍັງບໍ່ມີຂໍ້ມູນໃນລະບົບ') : 'ບໍ່ພົບຂໍ້ມູນໃນເງື່ອນໄຂທີ່ເລືອກ' }}</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <tr v-for="t in filteredTransactions" :key="t.id" class="hover:bg-blue-50/30 transition-colors group">
-                                    <td class="p-4 text-sm text-gray-800 whitespace-nowrap font-medium">{{ t.date }}</td>
-                                    <td class="p-4 text-sm whitespace-nowrap">
-                                        <span class="px-3 py-1.5 rounded-lg text-[11px] font-bold tracking-wide" :class="t.type === 'income' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
-                                            {{ t.type === 'income' ? 'ລາຍຮັບ' : 'ລາຍຈ່າຍ' }}
-                                        </span>
-                                    </td>
-                                    <td class="p-4 text-sm text-gray-700 whitespace-nowrap">{{ t.category }}</td>
-                                    <td class="p-4 text-sm text-gray-600 max-w-[300px] truncate" :title="t.description">{{ t.description }}</td>
-                                    <td class="p-4 text-sm font-bold text-right whitespace-nowrap" :class="t.type === 'income' ? 'text-green-600' : 'text-red-600'">
-                                        {{ t.type === 'income' ? '+' : '-' }}{{ formatMoney(t.amount) }}
-                                    </td>
-                                    <td v-if="user.role === 'admin'" class="p-4">
-                                        <div class="flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button @click="handleEdit(t)" :disabled="isLoading" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"><i class="ph ph-pencil-simple text-lg"></i></button>
-                                            <button @click="handleDelete(t.id)" :disabled="isLoading" class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"><i class="ph ph-trash text-lg"></i></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 📱 Mobile Card View -->
-                    <div class="md:hidden space-y-3 pb-6">
-                        <div v-if="filteredTransactions.length === 0" class="bg-white rounded-2xl p-8 text-center border border-gray-100">
-                            <i class="ph ph-file-dashed text-4xl text-gray-300 mb-2"></i>
-                            <p class="text-gray-500 font-medium text-sm">{{ transactions.length === 0 ? 'ຍັງບໍ່ມີຂໍ້ມູນ' : 'ບໍ່ພົບຂໍ້ມູນ' }}</p>
-                        </div>
-                        <div v-for="t in filteredTransactions" :key="t.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 active:scale-[0.99] transition-transform">
-                            <div class="flex justify-between items-start mb-3">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="t.type === 'income' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'">
-                                        <i class="ph text-xl" :class="t.type === 'income' ? 'ph-arrow-down-left' : 'ph-arrow-up-right'"></i>
-                                    </div>
-                                    <div>
-                                        <p class="font-bold text-gray-800 text-sm">{{ t.category }}</p>
-                                        <p class="text-xs text-gray-500 mt-0.5">{{ t.date }}</p>
-                                    </div>
-                                </div>
-                                <div class="font-bold text-base" :class="t.type === 'income' ? 'text-green-600' : 'text-red-600'">
-                                    {{ t.type === 'income' ? '+' : '-' }}{{ formatMoney(t.amount) }}
-                                </div>
-                            </div>
-                            <div class="text-sm text-gray-600 bg-gray-50/50 p-3 rounded-xl border border-gray-50 leading-relaxed">{{ t.description }}</div>
-                            <div v-if="user.role === 'admin'" class="mt-3 pt-3 border-t border-gray-100 flex justify-end gap-2">
-                                <button @click="handleEdit(t)" class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl active:bg-blue-100"><i class="ph ph-pencil-simple text-lg"></i> ແກ້ໄຂ</button>
-                                <button @click="handleDelete(t.id)" class="flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 rounded-xl active:bg-red-100"><i class="ph ph-trash text-lg"></i> លຶບ</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Print View -->
-                <div v-if="currentView === 'print'" class="p-4 md:p-8 max-w-5xl mx-auto h-full flex flex-col">
-                    <div class="print-hidden mb-6">
-                        <h1 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2"><i class="ph-fill ph-printer text-blue-600"></i> ພິມບົດສະຫຼຸບ</h1>
-                        <p class="text-gray-500 text-sm">ຕັ້ງຄ່າຂໍ້ມູນກ່ອນສັ່ງພິມລົງເຈ້ຍ</p>
-                    </div>
-
-                    <div class="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row flex-wrap gap-4 items-end print-hidden mb-6">
-                        <div class="w-full md:flex-1 md:min-w-[200px]">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ຫົວຂໍ້ບົດສະຫຼຸບ</label>
-                            <input type="text" v-model="reportTitle" class="w-full border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-12" />
-                        </div>
-                        <div class="w-full md:w-auto">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ໝວດໝູ່</label>
-                            <select v-model="reportCategory" class="w-full md:min-w-[160px] border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-12">
-                                <option value="">-- ທັງໝົດ --</option>
-                                <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-                            </select>
-                        </div>
-                        <div class="w-full md:w-auto">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ເດືອນ</label>
-                            <div class="flex gap-2">
-                                <input type="month" v-model="reportMonth" class="flex-1 md:w-auto border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 h-12" />
-                                <button @click="reportMonth = ''" class="px-4 py-3 rounded-xl font-bold text-sm transition-colors border h-12 whitespace-nowrap"
-                                    :class="!reportMonth ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-200'">ທຸກປີ</button>
-                            </div>
-                        </div>
-                        <div class="w-full md:w-auto">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ຍອດຍົກມາ (ກີບ)</label>
-                            <input type="number" v-model="carriedForward" placeholder="0" class="w-full md:min-w-[150px] border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none font-bold bg-gray-50 h-12" />
-                        </div>
-                        <div class="w-full md:w-auto flex flex-col mt-2 md:mt-0">
-                            <button @click="handlePrint" class="w-full flex items-center justify-center gap-2 bg-gradient-to-tr from-blue-600 to-blue-500 text-white px-6 py-3 rounded-xl font-bold transition-transform active:scale-95 shadow-lg shadow-blue-500/30 h-12">
-                                <i class="ph ph-printer text-xl"></i> ສັ່ງພິມ
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Printable Area (Hidden on mobile, only shows when printing or on desktop) -->
-                    <div class="hidden md:block print-area bg-white p-12 rounded-2xl shadow-sm border border-gray-200 print:border-none print:shadow-none min-h-[800px] flex-col">
-                        <div id="printable-area">
-                            <div class="text-center mb-10">
-                                <h1 class="text-3xl font-bold mb-2 text-gray-900">{{ reportTitle }}</h1>
-                                <p class="text-lg text-gray-700 font-bold">ພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ</p>
-                                <p class="text-sm text-gray-600 mt-3 font-medium">ປະຈຳເດືອນ: <span class="font-bold border-b border-gray-800 inline-block px-3">{{ getLaoMonthYear(reportMonth) }}</span></p>
-                                <p v-if="reportCategory" class="text-sm text-gray-600 mt-1.5 font-medium">ໝວດໝູ່: <span class="font-bold border-b border-gray-800 inline-block px-3">{{ reportCategory }}</span></p>
-                            </div>
-
-                            <table class="w-full text-left border-collapse border border-gray-800 mb-8 text-sm">
-                                <thead>
-                                    <tr class="bg-gray-100">
-                                        <th class="border border-gray-800 p-3 font-bold text-center w-12">ລ/ດ</th>
-                                        <th class="border border-gray-800 p-3 font-bold">ວັນທີ</th>
-                                        <th class="border border-gray-800 p-3 font-bold">ລາຍການ / ລາຍລະອຽດ</th>
-                                        <th class="border border-gray-800 p-3 font-bold">ໝວດໝູ່</th>
-                                        <th class="border border-gray-800 p-3 font-bold text-right w-36">ລາຍຮັບ (ກີບ)</th>
-                                        <th class="border border-gray-800 p-3 font-bold text-right w-36">ລາຍຈ່າຍ (ກີບ)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-if="Number(carriedForward) !== 0" class="bg-gray-50/80">
-                                        <td class="border border-gray-800 p-2.5 text-center text-gray-500">-</td>
-                                        <td class="border border-gray-800 p-2.5 text-gray-500">-</td>
-                                        <td class="border border-gray-800 p-2.5 font-bold text-gray-800">ຍອດຍົກມາຈາກເດືອນກ່ອນ</td>
-                                        <td class="border border-gray-800 p-2.5 text-gray-500">-</td>
-                                        <td class="border border-gray-800 p-2.5 text-right font-bold text-blue-700">
-                                            {{ Number(carriedForward) > 0 ? formatMoney(Number(carriedForward)).replace('₭','') : '-' }}
-                                        </td>
-                                        <td class="border border-gray-800 p-2.5 text-right font-bold text-red-600">
-                                            {{ Number(carriedForward) < 0 ? formatMoney(Math.abs(Number(carriedForward))).replace('₭','') : '-' }}
-                                        </td>
-                                    </tr>
-                                    <tr v-if="filteredTransactions.length === 0">
-                                        <td colspan="6" class="border border-gray-800 p-6 text-center text-gray-500 italic">ບໍ່ມີລາຍການເຄື່ອນໄຫວໃນຊ່ວງເວລານີ້</td>
-                                    </tr>
-                                    <tr v-for="(t, index) in filteredTransactions" :key="t.id" class="hover:bg-gray-50/50">
-                                        <td class="border border-gray-800 p-2.5 text-center">{{ index + 1 }}</td>
-                                        <td class="border border-gray-800 p-2.5">{{ t.date }}</td>
-                                        <td class="border border-gray-800 p-2.5">{{ t.description }}</td>
-                                        <td class="border border-gray-800 p-2.5">{{ t.category }}</td>
-                                        <td class="border border-gray-800 p-2.5 text-right">{{ t.type === 'income' ? formatMoney(t.amount).replace('₭','') : '-' }}</td>
-                                        <td class="border border-gray-800 p-2.5 text-right">{{ t.type === 'expense' ? formatMoney(t.amount).replace('₭','') : '-' }}</td>
-                                    </tr>
-                                </tbody>
-                                <tfoot>
-                                    <tr class="bg-gray-50 font-bold">
-                                        <td colspan="4" class="border border-gray-800 p-3 text-right">ລວມລາຍຮັບ-ລາຍຈ່າຍເດືອນນີ້:</td>
-                                        <td class="border border-gray-800 p-3 text-right">{{ formatMoney(totalIncome).replace('₭','') }}</td>
-                                        <td class="border border-gray-800 p-3 text-right">{{ formatMoney(totalExpense).replace('₭','') }}</td>
-                                    </tr>
-                                    <tr class="font-bold text-base">
-                                        <td colspan="4" class="border border-gray-800 p-4 text-right bg-gray-100">ຍອດຄົງເຫຼືອລວມຍອດຍົກມາ:</td>
-                                        <td colspan="2" class="border border-gray-800 p-4 text-center text-lg bg-gray-100" :class="(balance + Number(carriedForward || 0)) >= 0 ? 'text-gray-900' : 'text-red-600'">
-                                            {{ formatMoney(balance + Number(carriedForward || 0)) }}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-
-                            <div class="mt-16 grid grid-cols-2 gap-8 text-center text-sm print-break-avoid">
-                                <div>
-                                    <p class="font-bold mb-20 text-gray-800">ພະນັກງານຄິດໄລ່</p>
-                                    <div class="w-48 border-b border-gray-800 mx-auto border-dotted"></div>
-                                    <p class="mt-2 text-gray-600 font-medium">(..........................................)</p>
-                                    <p class="mt-1 text-gray-500">ວັນທີ: ....../....../..........</p>
-                                </div>
-                                <div>
-                                    <p class="font-bold mb-20 text-gray-800">ຫົວໜ້າພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ</p>
-                                    <div class="w-48 border-b border-gray-800 mx-auto border-dotted"></div>
-                                    <p class="mt-2 text-gray-600 font-medium">(..........................................)</p>
-                                    <p class="mt-1 text-gray-500">ວັນທີ: ....../....../..........</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Mobile Print Placeholder -->
-                    <div class="md:hidden flex-1 flex flex-col items-center justify-center bg-white rounded-2xl border border-gray-100 p-8 text-center">
-                        <div class="w-20 h-20 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
-                            <i class="ph ph-printer text-4xl"></i>
-                        </div>
-                        <h3 class="font-bold text-lg text-gray-800 mb-2">ພ້ອມສັ່ງພິມແລ້ວ</h3>
-                        <p class="text-sm text-gray-500">ກົດປຸ່ມສັ່ງພິມດ້ານເທິງ ເພື່ອເບິ່ງຕົວຢ່າງ ແລະ ສັ່ງພິມອອກທາງເຄື່ອງພິມ</p>
-                    </div>
-                </div>
-
-            </main>
+    <!-- Mobile bottom nav -->
+    <nav class="md:hidden no-print fixed bottom-0 inset-x-0 z-30 bg-white border-t border-slate-200/70 safe-b">
+      <div class="h-16 flex items-stretch">
+        <template v-for="(n, i) in mobileNav" :key="n.key">
+          <button v-if="n.key === 'add'" @click="openNew()" class="flex-1 flex items-center justify-center" aria-label="ເພີ່ມລາຍການ">
+            <span class="-mt-7 w-14 h-14 rounded-2xl bg-brand-600 text-white flex items-center justify-center shadow-lg shadow-brand-600/35 ring-4 ring-[#f3f5fa] active:scale-95 transition"><app-icon name="plus" :size="26"></app-icon></span>
+          </button>
+          <button v-else @click="go(n.key)" class="flex-1 flex flex-col items-center justify-center gap-0.5 transition" :class="view === n.key ? 'text-brand-600' : 'text-slate-500'">
+            <app-icon :name="n.icon" :size="22"></app-icon>
+            <span class="text-[10.5px] font-semibold">{{ n.short }}</span>
+          </button>
         </template>
+      </div>
+    </nav>
 
-        <!-- ================= MODALS ================= -->
-        <!-- Add/Edit Modal (Bottom Sheet on Mobile, Centered on Desktop) -->
-        <div v-if="isModalOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-end md:items-center justify-center z-[70] p-0 md:p-4">
-            <div class="bg-white w-full md:max-w-md rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
-                <!-- Mobile Handle -->
-                <div class="w-full flex justify-center pt-3 pb-1 md:hidden">
-                    <div class="w-12 h-1.5 bg-gray-300 rounded-full"></div>
-                </div>
-                
-                <div class="px-6 py-4 md:py-5 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
-                    <h2 class="font-bold text-gray-800 text-lg flex items-center gap-2">
-                        <i class="ph text-xl text-blue-600" :class="editingData ? 'ph-pencil-simple' : 'ph-plus-circle'"></i>
-                        {{ editingData ? 'ແກ້ໄຂຂໍ້ມູນ' : 'ເພີ່ມລາຍການໃໝ່' }}
-                    </h2>
-                    <button @click="isModalOpen = false" class="text-gray-400 hover:text-red-500 bg-gray-50 hover:bg-red-50 w-8 h-8 rounded-full flex items-center justify-center transition-colors">
-                        <i class="ph ph-x text-lg font-bold"></i>
-                    </button>
-                </div>
-                
-                <form @submit.prevent="handleSave" class="p-6 overflow-y-auto space-y-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">ວັນທີ</label>
-                        <input type="date" v-model="formData.date" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 text-sm" required />
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">ປະເພດ</label>
-                            <div class="relative">
-                                <select v-model="formData.type" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 appearance-none text-sm font-medium" :class="formData.type==='income' ? 'text-green-700' : 'text-red-700'">
-                                    <option value="income">ລາຍຮັບ (+)</option>
-                                    <option value="expense">ລາຍຈ່າຍ (-)</option>
-                                </select>
-                                <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">ໝວດໝູ່</label>
-                            <div class="relative">
-                                <select v-model="formData.category" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 appearance-none text-sm">
-                                    <option v-for="c in categories" :key="c" :value="c">{{ c }}</option>
-                                </select>
-                                <i class="ph ph-caret-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">ຈຳນວນເງິນ (ກີບ)</label>
-                        <div class="relative">
-                            <input type="number" min="0" v-model="formData.amount" class="w-full border border-gray-200 rounded-xl py-3.5 pl-4 pr-12 focus:ring-2 focus:ring-blue-500 outline-none bg-gray-50 font-bold text-gray-800 text-lg" placeholder="0" required />
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₭</span>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">ລາຍລະອຽດ / ໝາຍເຫດ</label>
-                        <textarea rows="3" v-model="formData.description" class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none resize-none bg-gray-50 text-sm" placeholder="ປ້ອນລາຍລະອຽດ..."></textarea>
-                    </div>
-
-                    <div class="pt-2 pb-safe flex gap-3">
-                        <button type="button" @click="isModalOpen = false" class="flex-1 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 p-4 rounded-xl font-bold transition-colors">ຍົກເລີກ</button>
-                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-xl font-bold transition-colors shadow-md shadow-blue-500/20 flex justify-center items-center gap-2">
-                            <i class="ph ph-floppy-disk text-lg"></i> ບັນທຶກລົງ Sheet
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Settings Modal -->
-        <div v-if="isSettingsOpen" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
-            <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 md:p-8 transform transition-all">
-                <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                    <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600"><i class="ph-fill ph-gear text-2xl"></i></div>
-                    ຕັ້ງຄ່າການເຊື່ອມຕໍ່ Sheet
-                </h2>
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Google Apps Script Web App URL</label>
-                    <input type="text" v-model="tempSheetUrl" placeholder="https://script.google.com/macros/s/..." class="w-full border border-gray-200 rounded-xl p-3.5 focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono bg-gray-50" />
-                    <div class="mt-3 text-xs text-blue-800 bg-blue-50 p-4 rounded-xl border border-blue-100 flex gap-3 items-start">
-                        <i class="ph-fill ph-info text-xl shrink-0"></i>
-                        <p class="leading-relaxed">ລະບົບຈະຈື່ URL ນີ້ໄວ້ໃນເຄື່ອງ. ຖ້າທ່ານຕ້ອງການໃຊ້ຄ່າເລີ່ມຕົ້ນຈາກໂຄ້ດ ໃຫ້ລຶບຊ່ອງນີ້ໃຫ້ວ່າງເປົ່າແລ້ວກົດບັນທຶກ.</p>
-                    </div>
-                </div>
-                <div class="flex gap-3 justify-end">
-                    <button @click="isSettingsOpen = false" class="px-6 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl font-bold transition-colors">ປິດ</button>
-                    <button @click="saveSettings" class="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-colors shadow-md shadow-blue-500/20">ບັນທຶກການຕັ້ງຄ່າ</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Alert Modal -->
-        <div v-if="alertMessage" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
-            <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
-                <div class="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <i class="ph-fill ph-warning-circle text-4xl"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">ແຈ້ງເຕືອນ</h3>
-                <p class="text-gray-600 mb-8 whitespace-pre-wrap text-sm leading-relaxed">{{ alertMessage }}</p>
-                <button @click="alertMessage = ''" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-xl transition-colors">ປິດໜ້າຕ່າງ</button>
-            </div>
-        </div>
-
-        <!-- Confirm Modal -->
-        <div v-if="confirmDialog.isOpen" class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-[80] p-4">
-            <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
-                <div class="w-16 h-16 bg-orange-50 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <i class="ph-fill ph-warning text-4xl"></i>
-                </div>
-                <h3 class="text-xl font-bold text-gray-800 mb-2">ຢືນຢັນການລຶບ</h3>
-                <p class="text-gray-600 mb-8 text-sm leading-relaxed">{{ confirmDialog.message }}</p>
-                <div class="flex gap-3">
-                    <button @click="confirmDialog.isOpen = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-4 rounded-xl transition-colors">ຍົກເລີກ</button>
-                    <button @click="executeConfirm" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-red-500/30">ຢືນຢັນລຶບ</button>
-                </div>
-            </div>
-        </div>
-
+    <!-- Loading bar -->
+    <div v-if="loading" class="no-print fixed top-0 inset-x-0 h-0.5 z-[60] overflow-hidden bg-brand-100">
+      <div class="h-full w-1/3 bg-brand-600 animate-pulse"></div>
     </div>
 
-    <!-- Application Logic using Vue 3 -->
-    <script>
-        const { createApp, ref, computed, onMounted } = Vue;
+    <!-- ======================= MAIN ======================= -->
+    <main class="flex-1 overflow-y-auto m-pad md:py-0">
 
-        const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxl9iY53p8C7yRdkrhVzn4Vx47Ra1-yqcmHpbnfHrQy1lsfcxxqlHiFCrC_U3cWb-ZR/exec';
+      <!-- Demo banner -->
+      <div v-if="isDemo" class="no-print max-w-7xl mx-auto px-4 md:px-8 pt-4 md:pt-6">
+        <div class="flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl px-4 py-3 text-sm">
+          <app-icon name="info" :size="18" class="mt-0.5 text-amber-600"></app-icon>
+          <p class="leading-relaxed"><b>ໂໝດຕົວຢ່າງ:</b> ຂໍ້ມູນທັງໝົດເປັນຂໍ້ມູນຈຳລອງ ແລະ ຈະຣີເຊັດເມື່ອໂຫຼດໜ້າໃໝ່. ໃສ່ <code class="bg-amber-100 px-1 rounded">API_URL</code> ໃນໂຄ້ດເພື່ອເຊື່ອມ Google Sheet ແທ້.</p>
+        </div>
+      </div>
 
-        const generateId = () => {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-                return v.toString(16);
-            });
-        };
+      <!-- ========== DASHBOARD ========== -->
+      <section v-if="view === 'dashboard'" class="max-w-7xl mx-auto p-4 md:p-8 space-y-5 md:space-y-6">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+          <div class="hidden md:block">
+            <h1 class="text-2xl font-bold">ສະບາຍດີ, {{ session.username }}</h1>
+            <p class="text-slate-500 text-sm mt-1">ພາບລວມການເງິນ {{ dashMonth ? 'ປະຈຳເດືອນ ' + laoMonthYear(dashMonth) : 'ທັງໝົດ' }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="flex-1 md:flex-none flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+              <button @click="shiftDashMonth(-1)" :disabled="!dashMonth" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30" aria-label="ເດືອນກ່ອນ"><app-icon name="chevLeft" :size="18"></app-icon></button>
+              <input type="month" v-model="dashMonth" class="flex-1 md:w-40 bg-transparent text-sm font-semibold text-center outline-none min-h-0 h-9">
+              <button @click="shiftDashMonth(1)" :disabled="!dashMonth" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30" aria-label="ເດືອນຖັດໄປ"><app-icon name="chevRight" :size="18"></app-icon></button>
+            </div>
+            <button @click="dashMonth = dashMonth ? '' : thisMonth()" class="h-11 px-4 rounded-xl text-sm font-bold border shadow-sm transition"
+              :class="!dashMonth ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">{{ dashMonth ? 'ທັງໝົດ' : 'ເດືອນນີ້' }}</button>
+            <button @click="fetchTransactions()" :disabled="loading" class="hidden md:flex h-11 px-4 rounded-xl bg-white border border-slate-200 shadow-sm items-center gap-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+              <app-icon name="refresh" :size="17" :class="loading ? 'spin text-brand-600' : ''"></app-icon> ໂຫຼດໃໝ່
+            </button>
+          </div>
+        </div>
 
-        const CATEGORIES = ['ເງີນອອກໂຄສະນາ', 'ເງີນບໍລິຫານ', 'ເງີນມ້ວນ', 'ເງີນເກັບ20ພັນ', 'ອື່ນໆ'];
+        <!-- KPI -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/70 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs md:text-sm font-semibold text-slate-500">ລາຍຮັບ</span>
+              <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><app-icon name="arrowDown" :size="17"></app-icon></span>
+            </div>
+            <p class="num mt-2 text-lg md:text-2xl font-bold text-slate-900 truncate">{{ formatMoney(dashSum.income) }}</p>
+            <p v-if="incomeChange !== null" class="mt-1 text-[11px] md:text-xs font-semibold" :class="incomeChange >= 0 ? 'text-emerald-600' : 'text-rose-600'">
+              {{ incomeChange >= 0 ? '▲' : '▼' }} {{ Math.abs(incomeChange) }}% <span class="font-normal text-slate-400">ທຽບເດືອນກ່ອນ</span>
+            </p>
+          </div>
+          <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/70 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs md:text-sm font-semibold text-slate-500">ລາຍຈ່າຍ</span>
+              <span class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center"><app-icon name="arrowUp" :size="17"></app-icon></span>
+            </div>
+            <p class="num mt-2 text-lg md:text-2xl font-bold text-slate-900 truncate">{{ formatMoney(dashSum.expense) }}</p>
+            <p v-if="expenseChange !== null" class="mt-1 text-[11px] md:text-xs font-semibold" :class="expenseChange <= 0 ? 'text-emerald-600' : 'text-rose-600'">
+              {{ expenseChange >= 0 ? '▲' : '▼' }} {{ Math.abs(expenseChange) }}% <span class="font-normal text-slate-400">ທຽບເດືອນກ່ອນ</span>
+            </p>
+          </div>
+          <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/70 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs md:text-sm font-semibold text-slate-500">ສ່ວນຕ່າງ (ຮັບ − ຈ່າຍ)</span>
+            </div>
+            <p class="num mt-2 text-lg md:text-2xl font-bold truncate" :class="dashSum.net >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ dashSum.net >= 0 ? '+' : '−' }}{{ formatMoney(Math.abs(dashSum.net)) }}</p>
+            <p class="mt-1 text-[11px] md:text-xs text-slate-400">{{ dashList.length }} ລາຍການ</p>
+          </div>
+          <div class="rounded-2xl p-4 md:p-5 text-white shadow-md relative overflow-hidden"
+               :class="cumulativeBalance >= 0 ? 'bg-gradient-to-br from-brand-600 to-brand-800 shadow-brand-700/25' : 'bg-gradient-to-br from-rose-600 to-rose-700 shadow-rose-700/25'">
+            <div class="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/10"></div>
+            <span class="relative text-xs md:text-sm font-semibold text-white/80">ເງິນຄົງເຫຼືອສະສົມ</span>
+            <p class="relative num mt-2 text-lg md:text-2xl font-bold truncate">{{ formatMoney(cumulativeBalance) }}</p>
+            <p class="relative mt-1 text-[11px] md:text-xs text-white/70">{{ dashMonth ? 'ຮອດທ້າຍ ' + laoMonthYear(dashMonth) : 'ທຸກລາຍການ' }}</p>
+          </div>
+        </div>
 
-        createApp({
-            setup() {
-                // State
-                const user = ref(null);
-                const transactions = ref([]);
-                const currentView = ref('dashboard');
-                
-                const loginUsername = ref('');
-                const loginPassword = ref('');
-                const loginError = ref('');
-                const isLoggingIn = ref(false);
+        <div class="grid lg:grid-cols-3 gap-4 md:gap-6">
+          <!-- Monthly chart -->
+          <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 md:p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 class="font-bold">ລາຍຮັບ-ລາຍຈ່າຍ ລາຍເດືອນ</h2>
+                <div class="flex items-center gap-4 mt-1 text-xs text-slate-500">
+                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>ລາຍຮັບ</span>
+                  <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-rose-400"></span>ລາຍຈ່າຍ</span>
+                </div>
+              </div>
+              <select v-model.number="chartYear" class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-brand-500">
+                <option v-for="y in yearsAvailable" :key="y" :value="y">ປີ {{ y }}</option>
+              </select>
+            </div>
+            <div class="relative">
+              <svg viewBox="0 0 640 240" class="w-full h-auto" role="img" aria-label="ກຣາຟລາຍຮັບລາຍຈ່າຍລາຍເດືອນ">
+                <g v-for="i in 5" :key="'g'+i">
+                  <line x1="48" :x2="636" :y1="12 + (i-1)*45" :y2="12 + (i-1)*45" stroke="#e8ecf3" stroke-width="1"></line>
+                  <text x="42" :y="16 + (i-1)*45" text-anchor="end" font-size="10" fill="#94a3b8">{{ shortMoney(chartMax * (5-i) / 4) }}</text>
+                </g>
+                <g v-for="(mo, i) in monthly" :key="'m'+i" @mouseenter="hoverMonth = i" @mouseleave="hoverMonth = null" @click="hoverMonth = hoverMonth === i ? null : i" style="cursor:pointer">
+                  <rect :x="50 + i*49" y="8" width="47" height="196" :fill="hoverMonth === i || isSelectedChartMonth(i) ? '#f1f5ff' : 'transparent'" rx="6"></rect>
+                  <rect :x="50 + i*49 + 8" :y="192 - barH(mo.income)" width="14" :height="barH(mo.income)" rx="3" fill="#10b981"></rect>
+                  <rect :x="50 + i*49 + 25" :y="192 - barH(mo.expense)" width="14" :height="barH(mo.expense)" rx="3" fill="#fb7185"></rect>
+                  <text :x="50 + i*49 + 23.5" y="222" text-anchor="middle" font-size="11" :fill="isSelectedChartMonth(i) ? '#2450d8' : '#64748b'" :font-weight="isSelectedChartMonth(i) ? 700 : 400">{{ LAO_MONTHS_SHORT[i] }}</text>
+                </g>
+              </svg>
+              <div v-if="hoverMonth !== null" class="absolute top-0 right-0 bg-slate-900 text-white text-xs rounded-xl px-3 py-2 shadow-lg pointer-events-none">
+                <p class="font-bold mb-1">{{ LAO_MONTHS[hoverMonth] }} {{ chartYear }}</p>
+                <p class="num"><span class="text-emerald-300">ຮັບ</span> {{ formatMoney(monthly[hoverMonth].income) }}</p>
+                <p class="num"><span class="text-rose-300">ຈ່າຍ</span> {{ formatMoney(monthly[hoverMonth].expense) }}</p>
+              </div>
+            </div>
+          </div>
 
-                const alertMessage = ref('');
-                const confirmDialog = ref({ isOpen: false, message: '', onConfirm: null });
+          <!-- Category breakdown -->
+          <div class="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 md:p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="font-bold">ແຍກຕາມໝວດໝູ່</h2>
+              <div class="flex bg-slate-100 rounded-lg p-0.5 text-xs font-semibold">
+                <button @click="catMode = 'expense'" class="px-2.5 py-1.5 rounded-md transition" :class="catMode === 'expense' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'">ລາຍຈ່າຍ</button>
+                <button @click="catMode = 'income'" class="px-2.5 py-1.5 rounded-md transition" :class="catMode === 'income' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500'">ລາຍຮັບ</button>
+              </div>
+            </div>
+            <div v-if="catBreakdown.items.length === 0" class="py-10 text-center text-sm text-slate-400">ບໍ່ມີຂໍ້ມູນໃນຊ່ວງນີ້</div>
+            <div v-else class="space-y-3.5">
+              <div class="flex h-3 rounded-full overflow-hidden bg-slate-100">
+                <div v-for="c in catBreakdown.items" :key="'s'+c.name" :style="{ width: c.pct + '%', background: catColor(c.name) }"></div>
+              </div>
+              <div v-for="c in catBreakdown.items" :key="c.name">
+                <div class="flex items-center justify-between text-sm gap-2">
+                  <span class="flex items-center gap-2 min-w-0"><span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: catColor(c.name) }"></span><span class="truncate">{{ c.name }}</span></span>
+                  <span class="num font-semibold whitespace-nowrap">{{ formatNumber(c.v) }} <span class="text-slate-400 font-normal text-xs">{{ c.pct.toFixed(0) }}%</span></span>
+                </div>
+              </div>
+              <div class="pt-3 border-t border-slate-100 flex justify-between text-sm">
+                <span class="text-slate-500">ລວມ</span><span class="num font-bold">{{ formatMoney(catBreakdown.total) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                const sheetUrl = ref(localStorage.getItem('sheetUrl') || DEFAULT_SHEET_URL);
-                const isSettingsOpen = ref(false);
-                const tempSheetUrl = ref(sheetUrl.value);
-                const isLoading = ref(false);
+        <!-- Recent -->
+        <div class="bg-white rounded-2xl border border-slate-200/70 shadow-sm">
+          <div class="flex items-center justify-between px-4 md:px-6 py-4 border-b border-slate-100">
+            <h2 class="font-bold">ລາຍການລ່າສຸດ</h2>
+            <button @click="go('transactions')" class="text-sm font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">ເບິ່ງທັງໝົດ <app-icon name="chevRight" :size="16"></app-icon></button>
+          </div>
+          <div v-if="recent.length === 0" class="py-12 text-center text-sm text-slate-400">{{ loading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : 'ຍັງບໍ່ມີລາຍການໃນຊ່ວງນີ້' }}</div>
+          <ul v-else class="divide-y divide-slate-100">
+            <li v-for="t in recent" :key="t.id" class="px-4 md:px-6 py-3 flex items-center gap-3">
+              <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
+                <app-icon :name="t.type === 'income' ? 'arrowDown' : 'arrowUp'" :size="18"></app-icon>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-sm font-semibold truncate">{{ t.description || '—' }}</p>
+                <p class="text-xs text-slate-500 truncate">{{ laoDate(t.date) }} · {{ t.category }}</p>
+              </div>
+              <p class="num text-sm font-bold whitespace-nowrap" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">{{ t.type === 'income' ? '+' : '−' }}{{ formatNumber(t.amount) }}</p>
+            </li>
+          </ul>
+        </div>
+      </section>
 
-                // Dashboard Filters
-                const filterMonth = ref('');
-                const filterCategory = ref('');
+      <!-- ========== TRANSACTIONS ========== -->
+      <section v-if="view === 'transactions'" class="max-w-7xl mx-auto p-4 md:p-8 space-y-4">
+        <div class="hidden md:flex items-end justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">ລາຍການທັງໝົດ</h1>
+            <p class="text-slate-500 text-sm mt-1">ຄົ້ນຫາ, ກັ່ນຕອງ ແລະ ສົ່ງອອກຂໍ້ມູນ</p>
+          </div>
+          <button @click="exportCSV" :disabled="txList.length === 0" class="h-11 px-4 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center gap-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            <app-icon name="download" :size="17"></app-icon> ສົ່ງອອກ CSV (Excel)
+          </button>
+        </div>
 
-                // Modal Form
-                const isModalOpen = ref(false);
-                const editingData = ref(null);
-                const formData = ref({ date: '', type: 'income', category: CATEGORIES[0], amount: '', description: '' });
+        <div class="!mt-0 md:!mt-4 bg-white rounded-2xl border border-slate-200/70 shadow-sm p-3 md:p-4 space-y-3">
+          <div class="relative">
+            <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><app-icon name="search" :size="18"></app-icon></span>
+            <input v-model="f.q" type="search" placeholder="ຄົ້ນຫາລາຍລະອຽດ, ໝວດໝູ່ ຫຼື ຈຳນວນເງິນ..." class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100 transition">
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <div class="flex bg-slate-100 rounded-xl p-1 text-sm font-semibold">
+              <button v-for="o in typeOptions" :key="o.v" @click="f.type = o.v" class="px-3 h-9 rounded-lg transition" :class="f.type === o.v ? 'bg-white shadow-sm ' + o.on : 'text-slate-500'">{{ o.label }}</button>
+            </div>
+            <select v-model="f.category" class="h-11 flex-1 min-w-[150px] md:flex-none md:w-48 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
+              <option value="">ທຸກໝວດໝູ່</option>
+              <option v-for="c in allCategories" :key="c" :value="c">{{ c }}</option>
+            </select>
+            <input type="month" v-model="f.month" class="h-11 flex-1 min-w-[150px] md:flex-none rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
+            <button v-if="hasFilter" @click="clearFilters" class="h-11 px-3 rounded-xl text-sm font-semibold text-brand-600 hover:bg-brand-50 flex items-center gap-1"><app-icon name="x" :size="16"></app-icon> ລ້າງການກັ່ນຕອງ</button>
+          </div>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm pt-1">
+            <span class="text-slate-500">ພົບ <b class="text-slate-800">{{ txList.length }}</b> ລາຍການ</span>
+            <span class="num text-emerald-600 font-semibold">ຮັບ {{ formatNumber(txSum.income) }}</span>
+            <span class="num text-rose-600 font-semibold">ຈ່າຍ {{ formatNumber(txSum.expense) }}</span>
+            <button @click="exportCSV" :disabled="txList.length === 0" class="md:hidden ml-auto flex items-center gap-1 text-brand-600 font-semibold disabled:opacity-50"><app-icon name="download" :size="15"></app-icon> CSV</button>
+          </div>
+        </div>
 
-                // Print State
-                const reportMonth = ref('');
-                const reportCategory = ref('');
-                const reportTitle = ref('ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ');
-                const carriedForward = ref('');
+        <!-- Desktop table -->
+        <div class="hidden md:block bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 border-b border-slate-200/70 text-xs text-slate-500">
+              <tr>
+                <th class="px-5 py-3 font-semibold">ວັນທີ</th>
+                <th class="px-5 py-3 font-semibold">ລາຍລະອຽດ</th>
+                <th class="px-5 py-3 font-semibold">ໝວດໝູ່</th>
+                <th class="px-5 py-3 font-semibold text-right">ຈຳນວນເງິນ</th>
+                <th class="px-5 py-3 font-semibold">ຜູ້ບັນທຶກ</th>
+                <th v-if="isAdmin" class="px-5 py-3 font-semibold text-center w-28">ຈັດການ</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr v-if="txList.length === 0">
+                <td :colspan="isAdmin ? 6 : 5" class="py-16 text-center text-slate-400">{{ loading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : (transactions.length ? 'ບໍ່ພົບລາຍການທີ່ກົງກັບເງື່ອນໄຂ' : 'ຍັງບໍ່ມີຂໍ້ມູນໃນລະບົບ') }}</td>
+              </tr>
+              <tr v-for="t in txVisible" :key="t.id" class="hover:bg-slate-50/70" :class="deletingId === t.id ? 'opacity-40' : ''">
+                <td class="px-5 py-3 whitespace-nowrap text-slate-600">{{ laoDateShort(t.date) }}</td>
+                <td class="px-5 py-3 max-w-[340px]">
+                  <p class="font-medium text-slate-800 truncate" :title="t.description">{{ t.description || '—' }}</p>
+                </td>
+                <td class="px-5 py-3 whitespace-nowrap">
+                  <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700"><span class="w-2 h-2 rounded-full" :style="{ background: catColor(t.category) }"></span>{{ t.category }}</span>
+                </td>
+                <td class="px-5 py-3 text-right whitespace-nowrap num font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">{{ t.type === 'income' ? '+' : '−' }}{{ formatNumber(t.amount) }}</td>
+                <td class="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">{{ t.addedBy || '—' }}<span v-if="t.editedBy" class="block text-slate-400">ແກ້: {{ t.editedBy }}</span></td>
+                <td v-if="isAdmin" class="px-3 py-3">
+                  <div class="flex justify-center gap-1">
+                    <button @click="openEdit(t)" :disabled="busy" class="w-9 h-9 rounded-lg text-slate-500 hover:text-brand-600 hover:bg-brand-50 flex items-center justify-center disabled:opacity-40" title="ແກ້ໄຂ" aria-label="ແກ້ໄຂ"><app-icon name="edit" :size="17"></app-icon></button>
+                    <button @click="removeTx(t)" :disabled="busy" class="w-9 h-9 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center disabled:opacity-40" title="ລຶບ" aria-label="ລຶບ"><app-icon name="trash" :size="17"></app-icon></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-                const categories = CATEGORIES;
+        <!-- Mobile grouped list -->
+        <div class="md:hidden space-y-4">
+          <div v-if="txList.length === 0" class="bg-white rounded-2xl border border-slate-200/70 py-14 text-center text-sm text-slate-400">
+            {{ loading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : (transactions.length ? 'ບໍ່ພົບລາຍການທີ່ກົງກັບເງື່ອນໄຂ' : 'ຍັງບໍ່ມີຂໍ້ມູນໃນລະບົບ') }}
+          </div>
+          <div v-for="g in txGroups" :key="g.date">
+            <div class="flex items-center justify-between px-1 mb-1.5 text-xs">
+              <span class="font-bold text-slate-600">{{ laoDate(g.date) }}</span>
+              <span class="num font-semibold" :class="g.net >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ g.net >= 0 ? '+' : '−' }}{{ formatNumber(Math.abs(g.net)) }}</span>
+            </div>
+            <div class="bg-white rounded-2xl border border-slate-200/70 shadow-sm divide-y divide-slate-100 overflow-hidden">
+              <div v-for="t in g.items" :key="t.id" class="p-3.5" :class="deletingId === t.id ? 'opacity-40' : ''">
+                <div class="flex items-start gap-3">
+                  <span class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" :class="t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'">
+                    <app-icon :name="t.type === 'income' ? 'arrowDown' : 'arrowUp'" :size="18"></app-icon>
+                  </span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-2">
+                      <p class="text-sm font-semibold leading-snug break-words">{{ t.description || '—' }}</p>
+                      <p class="num text-sm font-bold whitespace-nowrap" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">{{ t.type === 'income' ? '+' : '−' }}{{ formatNumber(t.amount) }}</p>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="{ background: catColor(t.category) }"></span>{{ t.category }}<span v-if="t.addedBy" class="text-slate-400">· {{ t.addedBy }}</span></p>
+                  </div>
+                </div>
+                <div v-if="isAdmin" class="flex justify-end gap-2 mt-2.5">
+                  <button @click="openEdit(t)" :disabled="busy" class="h-9 px-3.5 rounded-lg text-xs font-bold text-brand-700 bg-brand-50 active:bg-brand-100 flex items-center gap-1.5 disabled:opacity-40"><app-icon name="edit" :size="15"></app-icon> ແກ້ໄຂ</button>
+                  <button @click="removeTx(t)" :disabled="busy" class="h-9 px-3.5 rounded-lg text-xs font-bold text-rose-700 bg-rose-50 active:bg-rose-100 flex items-center gap-1.5 disabled:opacity-40"><app-icon name="trash" :size="15"></app-icon> ລຶບ</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
-                // Methods
-                const formatMoney = (amount) => {
-                    return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(amount || 0);
-                };
+        <div v-if="txList.length > txLimit" class="text-center">
+          <button @click="txLimit += 60" class="h-11 px-6 rounded-xl bg-white border border-slate-200 shadow-sm text-sm font-semibold text-slate-700 hover:bg-slate-50">ສະແດງເພີ່ມ ({{ txList.length - txLimit }} ລາຍການ)</button>
+        </div>
+      </section>
 
-                const showAlert = (msg) => alertMessage.value = msg;
-                const showConfirm = (msg, onConfirm) => confirmDialog.value = { isOpen: true, message: msg, onConfirm };
-                const executeConfirm = () => {
-                    if (confirmDialog.value.onConfirm) confirmDialog.value.onConfirm();
-                    confirmDialog.value.isOpen = false;
-                };
+      <!-- ========== REPORT ========== -->
+      <section v-if="view === 'report'" class="max-w-6xl mx-auto p-4 md:p-8 space-y-5">
+        <div class="no-print hidden md:block">
+          <h1 class="text-2xl font-bold">ລາຍງານ / ພິມບົດສະຫຼຸບ</h1>
+          <p class="text-slate-500 text-sm mt-1">ຍອດຍົກມາຄິດໄລ່ອັດຕະໂນມັດຈາກທຸກລາຍການກ່ອນເດືອນທີ່ເລືອກ</p>
+        </div>
 
-                const saveSettings = () => {
-                    const url = tempSheetUrl.value.trim();
-                    if (url === '') {
-                        localStorage.removeItem('sheetUrl');
-                        sheetUrl.value = DEFAULT_SHEET_URL;
-                    } else {
-                        localStorage.setItem('sheetUrl', url);
-                        sheetUrl.value = url;
-                    }
-                    isSettingsOpen.value = false;
-                };
+        <div class="no-print !mt-0 md:!mt-5 bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 md:p-5 grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
+          <label class="col-span-2 md:col-span-4 block">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຫົວຂໍ້ລາຍງານ</span>
+            <input v-model="rep.title" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500">
+          </label>
+          <label class="col-span-1 md:col-span-2 block">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ເດືອນ</span>
+            <input type="month" v-model="rep.month" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
+          </label>
+          <label class="col-span-1 md:col-span-2 block">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ໝວດໝູ່</span>
+            <select v-model="rep.category" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
+              <option value="">ທັງໝົດ</option>
+              <option v-for="c in allCategories" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </label>
+          <div class="col-span-2 md:col-span-4">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຍອດຍົກມາ</span>
+            <div class="flex gap-2">
+              <div class="flex bg-slate-100 rounded-xl p-1 text-xs font-semibold shrink-0">
+                <button @click="rep.cfMode = 'auto'" class="px-3 h-9 rounded-lg" :class="rep.cfMode === 'auto' ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500'">ອັດຕະໂນມັດ</button>
+                <button @click="rep.cfMode = 'manual'" class="px-3 h-9 rounded-lg" :class="rep.cfMode === 'manual' ? 'bg-white shadow-sm text-brand-700' : 'text-slate-500'">ປ້ອນເອງ</button>
+              </div>
+              <input v-if="rep.cfMode === 'manual'" v-model="cfManualDisplay" inputmode="numeric" placeholder="0" class="flex-1 min-w-0 h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold num outline-none focus:border-brand-500">
+              <div v-else class="flex-1 min-w-0 h-11 rounded-xl bg-brand-50 border border-brand-100 px-3 flex items-center text-sm font-bold num text-brand-800 truncate">{{ formatMoney(carried) }}</div>
+            </div>
+          </div>
+          <label class="col-span-1 md:col-span-4 block">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຊື່ພະນັກງານຄິດໄລ່</span>
+            <input v-model="rep.preparer" placeholder="(ບໍ່ບັງຄັບ)" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500">
+          </label>
+          <label class="col-span-1 md:col-span-4 block">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຊື່ຫົວໜ້າພະແນກ</span>
+            <input v-model="rep.head" placeholder="(ບໍ່ບັງຄັບ)" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500">
+          </label>
+          <div class="col-span-2 md:col-span-4 flex gap-2">
+            <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer select-none">
+              <input type="checkbox" v-model="rep.national" class="w-4 h-4 accent-brand-600"> ຫົວເອກະສານລັດ
+            </label>
+            <button @click="printReport" class="flex-1 h-11 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold flex items-center justify-center gap-2 shadow-md shadow-brand-600/25">
+              <app-icon name="printer" :size="18"></app-icon> ພິມ / ບັນທຶກ PDF
+            </button>
+          </div>
+        </div>
 
-                const handleLogin = async () => {
-                    if (!sheetUrl.value) {
-                        loginError.value = 'ກະລຸນາຕັ້ງຄ່າ URL ຂອງ Google Sheet ກ່ອນ';
-                        return;
-                    }
-                    isLoggingIn.value = true;
-                    loginError.value = '';
+        <!-- Paper -->
+        <div class="print-wrap overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0 pb-2">
+          <div id="report-paper" class="bg-white mx-auto rounded-2xl border border-slate-200 shadow-sm p-8 md:p-12 min-w-[740px] max-w-[900px] text-[13px] text-slate-900 leading-relaxed">
+            <div v-if="rep.national" class="text-center text-[12px] font-semibold mb-5">
+              <p>ສາທາລະນະລັດ ປະຊາທິປະໄຕ ປະຊາຊົນລາວ</p>
+              <p>ສັນຕິພາບ ເອກະລາດ ປະຊາທິປະໄຕ ເອກະພາບ ວັດທະນາຖາວອນ</p>
+              <p class="tracking-[0.4em] text-slate-400 mt-0.5">○○○○○</p>
+            </div>
+            <div class="text-center mb-6">
+              <h2 class="text-xl font-bold">{{ rep.title || 'ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ' }}</h2>
+              <p class="font-semibold mt-0.5">{{ ORG_NAME }}</p>
+              <p class="mt-1.5 text-slate-700">ປະຈຳ: <b>{{ laoMonthYear(rep.month) }}</b><span v-if="rep.category"> &nbsp;·&nbsp; ໝວດໝູ່: <b>{{ rep.category }}</b></span></p>
+            </div>
 
-                    try {
-                        const response = await fetch(sheetUrl.value, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({ action: 'login', data: { username: loginUsername.value, password: loginPassword.value } })
-                        });
-                        const result = await response.json();
+            <table class="w-full border-collapse">
+              <thead>
+                <tr class="bg-slate-100">
+                  <th class="border border-slate-500 px-2 py-2 w-10 text-center">ລ/ດ</th>
+                  <th class="border border-slate-500 px-2 py-2 w-24">ວັນທີ</th>
+                  <th class="border border-slate-500 px-2 py-2">ລາຍການ / ລາຍລະອຽດ</th>
+                  <th class="border border-slate-500 px-2 py-2 w-28">ໝວດໝູ່</th>
+                  <th class="border border-slate-500 px-2 py-2 w-28 text-right">ລາຍຮັບ</th>
+                  <th class="border border-slate-500 px-2 py-2 w-28 text-right">ລາຍຈ່າຍ</th>
+                  <th class="border border-slate-500 px-2 py-2 w-28 text-right">ຍອດເຫຼືອ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="bg-slate-50">
+                  <td class="border border-slate-500 px-2 py-1.5 text-center">—</td>
+                  <td class="border border-slate-500 px-2 py-1.5">{{ rep.month ? laoDateShort(rep.month + '-01') : '—' }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 font-bold" colspan="4">ຍອດຍົກມາ{{ rep.month ? 'ຈາກເດືອນກ່ອນ' : '' }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 text-right num font-bold">{{ signed(carried) }}</td>
+                </tr>
+                <tr v-if="repRows.length === 0">
+                  <td colspan="7" class="border border-slate-500 px-2 py-6 text-center italic text-slate-500">ບໍ່ມີລາຍການເຄື່ອນໄຫວໃນຊ່ວງເວລານີ້</td>
+                </tr>
+                <tr v-for="r in repRows" :key="r.id">
+                  <td class="border border-slate-500 px-2 py-1.5 text-center">{{ r.no }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 whitespace-nowrap">{{ laoDateShort(r.date) }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5">{{ r.description }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5">{{ r.category }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ r.type === 'income' ? formatNumber(r.amount) : '' }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ r.type === 'expense' ? formatNumber(r.amount) : '' }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 text-right num" :class="r.bal < 0 ? 'text-rose-700' : ''">{{ signed(r.bal) }}</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-slate-100 font-bold">
+                  <td colspan="4" class="border border-slate-500 px-2 py-2 text-right">ລວມ</td>
+                  <td class="border border-slate-500 px-2 py-2 text-right num">{{ formatNumber(repSum.income) }}</td>
+                  <td class="border border-slate-500 px-2 py-2 text-right num">{{ formatNumber(repSum.expense) }}</td>
+                  <td class="border border-slate-500 px-2 py-2 text-right num" :class="repSum.end < 0 ? 'text-rose-700' : ''">{{ signed(repSum.end) }}</td>
+                </tr>
+              </tfoot>
+            </table>
 
-                        if (result.success) {
-                            user.value = { role: result.role, username: loginUsername.value };
-                            currentView.value = 'dashboard';
-                            fetchTransactions(); // Fetch data after login
-                        } else {
-                            loginError.value = result.error || 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ';
-                        }
-                    } catch (error) {
-                        loginError.value = 'ບໍ່ສາມາດເຊື່ອມຕໍ່ລະບົບໄດ້. ກະລຸນາກວດສອບອິນເຕີເນັດ ຫຼື API';
-                    } finally {
-                        isLoggingIn.value = false;
-                    }
-                };
+            <div class="grid grid-cols-4 gap-3 mt-5 avoid-break">
+              <div class="border border-slate-300 rounded-lg p-3"><p class="text-[11px] text-slate-500">ຍອດຍົກມາ</p><p class="num font-bold mt-0.5">{{ formatMoney(carried) }}</p></div>
+              <div class="border border-slate-300 rounded-lg p-3"><p class="text-[11px] text-slate-500">ລາຍຮັບລວມ</p><p class="num font-bold mt-0.5 text-emerald-700">{{ formatMoney(repSum.income) }}</p></div>
+              <div class="border border-slate-300 rounded-lg p-3"><p class="text-[11px] text-slate-500">ລາຍຈ່າຍລວມ</p><p class="num font-bold mt-0.5 text-rose-700">{{ formatMoney(repSum.expense) }}</p></div>
+              <div class="border-2 border-slate-800 rounded-lg p-3"><p class="text-[11px] text-slate-500">ຍອດຍົກໄປ</p><p class="num font-bold mt-0.5">{{ formatMoney(repSum.end) }}</p></div>
+            </div>
 
-                const logout = () => {
-                    user.value = null;
-                    loginUsername.value = '';
-                    loginPassword.value = '';
-                    loginError.value = '';
-                    currentView.value = 'dashboard';
-                };
+            <div v-if="!rep.category && repByCat.length > 1" class="mt-6 avoid-break">
+              <p class="font-bold mb-2">ສັງລວມຕາມໝວດໝູ່</p>
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-slate-100">
+                    <th class="border border-slate-500 px-2 py-1.5 text-left">ໝວດໝູ່</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ລາຍຮັບ</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ລາຍຈ່າຍ</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ສ່ວນຕ່າງ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="c in repByCat" :key="c.name">
+                    <td class="border border-slate-500 px-2 py-1.5">{{ c.name }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ c.income ? formatNumber(c.income) : '—' }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ c.expense ? formatNumber(c.expense) : '—' }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ signed(c.income - c.expense) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
 
-                const fetchTransactions = async () => {
-                    if (!sheetUrl.value) return;
-                    isLoading.value = true;
-                    try {
-                        const response = await fetch(sheetUrl.value);
-                        if (!response.ok) throw new Error('Network response error');
-                        const data = await response.json();
-                        
-                        if (data.error) throw new Error(data.error);
+            <p class="mt-8 text-right avoid-break">{{ ORG_PLACE }}, ວັນທີ ........../........../..............</p>
+            <div class="mt-4 grid grid-cols-2 gap-8 text-center avoid-break">
+              <div>
+                <p class="font-bold">ພະນັກງານຄິດໄລ່</p>
+                <div class="h-20"></div>
+                <p>( {{ rep.preparer || '..........................................' }} )</p>
+              </div>
+              <div>
+                <p class="font-bold">ຫົວໜ້າ{{ ORG_NAME }}</p>
+                <div class="h-20"></div>
+                <p>( {{ rep.head || '..........................................' }} )</p>
+              </div>
+            </div>
+            <p class="mt-10 pt-3 border-t border-slate-200 text-[10.5px] text-slate-400 flex justify-between">
+              <span>ພິມຈາກລະບົບບັນຊີ · ໂດຍ {{ session.username }}</span>
+              <span>{{ laoDate(todayYMD()) }}</span>
+            </p>
+          </div>
+        </div>
+      </section>
 
-                        transactions.value = data.map(row => {
-                            let formattedDate = '';
-                            if (row.Date) {
-                                const d = new Date(row.Date);
-                                if (!isNaN(d.getTime())) {
-                                    formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                                } else {
-                                    formattedDate = String(row.Date).split('T')[0];
-                                }
-                            }
-                            return {
-                                id: row.ID,
-                                date: formattedDate,
-                                type: String(row.Type).toLowerCase().trim() === 'income' ? 'income' : 'expense',
-                                category: row.Category ? String(row.Category).trim() : '',
-                                description: row.Description ? String(row.Description).trim() : '',
-                                amount: Number(row.Amount) || 0,
-                                addedBy: row.AddedBy
-                            };
-                        });
-                    } catch (error) {
-                        showAlert('ບໍ່ສາມາດດຶງຂໍ້ມູນຈາກ Google Sheet ໄດ້.\nອາດເກີດຈາກ URL ບໍ່ຖືກຕ້ອງ ຫຼື ອິນເຕີເນັດມີບັນຫາ.');
-                    } finally {
-                        isLoading.value = false;
-                    }
-                };
+      <!-- ========== SETTINGS ========== -->
+      <section v-if="view === 'settings'" class="max-w-3xl mx-auto p-4 md:p-8 space-y-4">
+        <div class="hidden md:block">
+          <h1 class="text-2xl font-bold">ບັນຊີ & ການຕັ້ງຄ່າ</h1>
+        </div>
 
-                const syncToSheet = async (action, transactionData) => {
-                    if (!sheetUrl.value) return true; 
-                    
-                    let sheetPayload;
-                    if (action === 'delete') {
-                        sheetPayload = { id: transactionData.id };
-                    } else {
-                        sheetPayload = {
-                            ID: transactionData.id,
-                            Date: transactionData.date,
-                            Type: transactionData.type === 'income' ? 'Income' : 'Expense',
-                            Category: transactionData.category,
-                            Description: transactionData.description,
-                            Amount: transactionData.amount,
-                            SlipUrl: '', Remark: '',  
-                            AddedBy: user.value.username,
-                            Timestamp: new Date().toISOString()
-                        };
-                    }
+        <div class="!mt-0 md:!mt-4 bg-white rounded-2xl border border-slate-200/70 shadow-sm p-5 flex items-center gap-4">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center" :class="isAdmin ? 'bg-brand-100 text-brand-700' : 'bg-slate-100 text-slate-600'">
+            <app-icon :name="isAdmin ? 'shield' : 'user'" :size="26"></app-icon>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-bold text-lg truncate">{{ session.username }}</p>
+            <p class="text-sm text-slate-500">{{ isAdmin ? 'ຜູ້ດູແລ — ເພີ່ມ, ແກ້ໄຂ, ລຶບໄດ້' : 'ສະມາຊິກ — ເບິ່ງ ແລະ ພິມລາຍງານໄດ້ຢ່າງດຽວ' }}</p>
+            <p class="text-xs text-slate-400 mt-0.5">Session ໝົດອາຍຸ: {{ timeText(new Date(session.expiresAt), true) }}</p>
+          </div>
+        </div>
 
-                    try {
-                        const response = await fetch(sheetUrl.value, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({ action, data: sheetPayload })
-                        });
-                        const result = await response.json();
-                        if (result.error) throw new Error(result.error);
-                        return result.success;
-                    } catch (error) {
-                        showAlert('ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກລົງ Google Sheet:\n' + error.message);
-                        return false;
-                    }
-                };
+        <div class="bg-white rounded-2xl border border-slate-200/70 shadow-sm divide-y divide-slate-100">
+          <div class="p-5 flex items-center gap-3">
+            <span class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center"><app-icon name="link" :size="19"></app-icon></span>
+            <div class="flex-1 min-w-0">
+              <p class="font-semibold">ການເຊື່ອມຕໍ່ Google Sheet</p>
+              <p class="text-xs mt-0.5 flex items-center gap-1.5" :class="conn.text"><span class="w-2 h-2 rounded-full" :class="conn.dot"></span>{{ conn.label }}<span v-if="lastSync" class="text-slate-400">· ຊິງລ່າສຸດ {{ timeText(lastSync) }}</span></p>
+            </div>
+            <button @click="fetchTransactions()" :disabled="loading" class="h-10 px-4 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50 flex items-center gap-2 disabled:opacity-60">
+              <app-icon name="refresh" :size="16" :class="loading ? 'spin' : ''"></app-icon> ທົດສອບ
+            </button>
+          </div>
+          <div v-if="isAdmin" class="p-5 text-sm text-slate-600 leading-relaxed">
+            <p class="font-semibold text-slate-800 mb-1">URL ຂອງ API</p>
+            <p class="font-mono text-xs bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 break-all">{{ API_URL ? maskUrl(API_URL) : '(ຍັງບໍ່ໄດ້ຕັ້ງ — ໂໝດຕົວຢ່າງ)' }}</p>
+            <p class="text-xs text-slate-500 mt-2">ເພື່ອຄວາມປອດໄພ URL ຖືກກຳນົດໄວ້ໃນໂຄ້ດ (<code>API_URL</code>) ເທົ່ານັ້ນ ບໍ່ໃຫ້ປ່ຽນຜ່ານໜ້າເວັບ. ເວລາ Deploy Apps Script ໃໝ່ ໃຫ້ໃຊ້ <b>Manage deployments → Edit → New version</b> ເພື່ອໃຫ້ URL ຄືເກົ່າ.</p>
+          </div>
+        </div>
 
-                const handleDelete = (id) => {
-                    if (!id) {
-                        showAlert('ບໍ່ສາມາດລຶບລາຍການນີ້ໄດ້ ເນື່ອງຈາກບໍ່ມີລະຫັດ. ກະລຸນາລຶບໃນ Sheet ໂດຍກົງ.');
-                        return;
-                    }
-                    showConfirm('ທ່ານຕ້ອງການລຶບລາຍການນີ້ແທ້ບໍ່? ການລຶບນີ້ຈະລຶບອອກຈາກ Google Sheet ພ້ອມ.', async () => {
-                        const previousData = [...transactions.value];
-                        transactions.value = transactions.value.filter(t => t.id !== id);
-                        const success = await syncToSheet('delete', { id });
-                        if (!success) transactions.value = previousData; 
-                    });
-                };
+        <button @click="logout" class="w-full h-12 rounded-2xl bg-white border border-rose-200 text-rose-600 font-bold flex items-center justify-center gap-2 hover:bg-rose-50 active:bg-rose-100">
+          <app-icon name="logout" :size="18"></app-icon> ອອກຈາກລະບົບ
+        </button>
+      </section>
+    </main>
+  </template>
 
-                const openNewModal = () => {
-                    formData.value = {
-                        date: new Date().toISOString().split('T')[0],
-                        type: 'income',
-                        category: categories[0],
-                        amount: '',
-                        description: ''
-                    };
-                    editingData.value = null;
-                    isModalOpen.value = true;
-                };
+  <!-- ======================= FORM MODAL ======================= -->
+  <transition name="fade">
+    <div v-if="form.open" class="no-print fixed inset-0 z-[70] bg-slate-900/45 backdrop-blur-[2px] flex items-end md:items-center justify-center md:p-4" @click.self="closeForm">
+      <transition name="pop" appear>
+        <div class="bg-white w-full md:max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl max-h-[92dvh] flex flex-col">
+          <div class="md:hidden flex justify-center pt-2.5"><span class="w-10 h-1.5 rounded-full bg-slate-300"></span></div>
+          <div class="px-5 md:px-6 py-4 flex items-center justify-between border-b border-slate-100">
+            <h2 class="text-lg font-bold">{{ form.editingId ? 'ແກ້ໄຂລາຍການ' : 'ເພີ່ມລາຍການໃໝ່' }}</h2>
+            <button @click="closeForm" class="w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center" aria-label="ປິດ"><app-icon name="x" :size="18"></app-icon></button>
+          </div>
+          <form @submit.prevent="saveForm" class="flex-1 overflow-y-auto px-5 md:px-6 py-5 space-y-4">
+            <div class="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
+              <button type="button" @click="form.type = 'income'" class="h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition" :class="form.type === 'income' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500'"><app-icon name="arrowDown" :size="17"></app-icon> ລາຍຮັບ</button>
+              <button type="button" @click="form.type = 'expense'" class="h-11 rounded-xl font-bold text-sm flex items-center justify-center gap-1.5 transition" :class="form.type === 'expense' ? 'bg-white text-rose-600 shadow-sm' : 'text-slate-500'"><app-icon name="arrowUp" :size="17"></app-icon> ລາຍຈ່າຍ</button>
+            </div>
 
-                const handleEdit = (transaction) => {
-                    if (!transaction.id) {
-                        showAlert('ບໍ່ສາມາດແກ້ໄຂລາຍການນີ້ໄດ້. ກະລຸນາແກ້ໄຂໃນ Google Sheet ໂດຍກົງ.');
-                        return;
-                    }
-                    formData.value = { ...transaction };
-                    editingData.value = transaction;
-                    isModalOpen.value = true;
-                };
+            <label class="block">
+              <span class="block text-sm font-semibold text-slate-700 mb-1.5">ຈຳນວນເງິນ (ກີບ)</span>
+              <div class="relative">
+                <input v-model="amountDisplay" inputmode="numeric" autocomplete="off" placeholder="0"
+                  class="w-full h-14 rounded-xl border bg-slate-50 pl-4 pr-12 text-2xl font-bold num outline-none focus:bg-white focus:ring-4 transition"
+                  :class="form.type === 'income' ? 'border-emerald-200 text-emerald-700 focus:border-emerald-500 focus:ring-emerald-100' : 'border-rose-200 text-rose-700 focus:border-rose-500 focus:ring-rose-100'">
+                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-lg">₭</span>
+              </div>
+              <div class="flex flex-wrap gap-1.5 mt-2">
+                <button v-for="q in quickAmounts" :key="q" type="button" @click="form.amount = (Number(form.amount) || 0) + q" class="h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-600 num">+{{ shortMoney(q) }}</button>
+                <button v-if="form.amount" type="button" @click="form.amount = ''" class="h-8 px-3 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-700">ລ້າງ</button>
+              </div>
+            </label>
 
-                const handleSave = async () => {
-                    if (!formData.value.date || !formData.value.amount || !formData.value.description) {
-                        showAlert('ກະລຸນາປ້ອນຂໍ້ມູນໃຫ້ຄົບຖ້ວນ');
-                        return;
-                    }
-                    
-                    isLoading.value = true;
-                    if (editingData.value) {
-                        const updatedRecord = { ...formData.value, id: editingData.value.id };
-                        transactions.value = transactions.value.map(t => t.id === editingData.value.id ? updatedRecord : t);
-                        isModalOpen.value = false;
-                        editingData.value = null;
-                        await syncToSheet('update', updatedRecord);
-                    } else {
-                        const newRecord = { ...formData.value, id: generateId() };
-                        transactions.value.push(newRecord);
-                        isModalOpen.value = false;
-                        await syncToSheet('insert', newRecord);
-                    }
-                    isLoading.value = false;
-                };
+            <div class="grid grid-cols-2 gap-3">
+              <label class="block">
+                <span class="block text-sm font-semibold text-slate-700 mb-1.5">ວັນທີ</span>
+                <input type="date" v-model="form.date" :max="todayYMD()" required class="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100">
+              </label>
+              <label class="block">
+                <span class="block text-sm font-semibold text-slate-700 mb-1.5">ໝວດໝູ່</span>
+                <select v-model="form.category" class="w-full h-12 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100">
+                  <option v-for="c in formCategories" :key="c" :value="c">{{ c }}</option>
+                </select>
+              </label>
+            </div>
 
-                const handlePrint = () => {
-                    const content = document.getElementById('printable-area').innerHTML;
-                    const printWin = window.open('', '_blank', 'width=1000,height=800');
-                    if (printWin) {
-                        printWin.document.write(`
-                            <!DOCTYPE html>
-                            <html>
-                            <head>
-                                <title>${reportTitle.value}</title>
-                                <script src="https://cdn.tailwindcss.com"><\/script>
-                                <style>
-                                    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;700&display=swap');
-                                    body { font-family: 'Noto Sans Lao', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                                    @page { margin: 15mm; }
-                                </style>
-                            </head>
-                            <body class="p-8 text-gray-900 bg-white">
-                                ${content}
-                                <script>
-                                    window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 800); };
-                                <\/script>
-                            </body>
-                            </html>
-                        `);
-                        printWin.document.close();
-                    } else {
-                        window.print();
-                    }
-                };
+            <label class="block">
+              <span class="block text-sm font-semibold text-slate-700 mb-1.5">ລາຍລະອຽດ</span>
+              <textarea v-model="form.description" rows="3" maxlength="300" required placeholder="ເຊັ່ນ: ຄ່າພິມປ້າຍໂຄສະນາ ງານວັນຊາດ" class="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm outline-none resize-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100"></textarea>
+              <div v-if="descSuggestions.length" class="flex flex-wrap gap-1.5 mt-1.5">
+                <button v-for="s in descSuggestions" :key="s" type="button" @click="form.description = s" class="max-w-full truncate h-7 px-2.5 rounded-lg bg-brand-50 text-brand-700 text-xs font-medium hover:bg-brand-100">{{ s }}</button>
+              </div>
+            </label>
 
-                const getLaoMonthYear = (ym) => {
-                    if (!ym) return 'ທັງໝົດ (ທຸກປີ)';
-                    const [year, month] = ym.split('-');
-                    return `${month}/${year}`;
-                };
+            <div v-if="form.error" class="flex items-center gap-2 bg-rose-50 text-rose-700 border border-rose-100 rounded-xl p-3 text-sm font-medium">
+              <app-icon name="alert" :size="18"></app-icon><span>{{ form.error }}</span>
+            </div>
 
-                // Computed Properties
-                const filteredTransactions = computed(() => {
-                    // For Dashboard
-                    if (currentView.value === 'dashboard') {
-                        return transactions.value.filter(t => {
-                            const matchMonth = filterMonth.value ? t.date.startsWith(filterMonth.value) : true;
-                            const matchCategory = filterCategory.value ? t.category === filterCategory.value : true;
-                            return matchMonth && matchCategory;
-                        }).sort((a, b) => new Date(b.date) - new Date(a.date));
-                    } 
-                    // For Print
-                    else {
-                        return transactions.value.filter(t => {
-                            const matchMonth = reportMonth.value ? t.date.startsWith(reportMonth.value) : true;
-                            const matchCategory = reportCategory.value ? t.category === reportCategory.value : true;
-                            return matchMonth && matchCategory;
-                        }).sort((a, b) => new Date(a.date) - new Date(b.date));
-                    }
-                });
+            <div class="flex gap-3 pt-1 pb-[env(safe-area-inset-bottom)]">
+              <button type="button" @click="closeForm" class="flex-1 h-12 rounded-xl border border-slate-200 font-bold text-slate-700 hover:bg-slate-50">ຍົກເລີກ</button>
+              <button type="submit" :disabled="form.saving" class="flex-[2] h-12 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold flex items-center justify-center gap-2 shadow-md shadow-brand-600/25 disabled:opacity-70">
+                <app-icon :name="form.saving ? 'loader' : 'check'" :size="18" :class="form.saving ? 'spin' : ''"></app-icon>
+                {{ form.saving ? 'ກຳລັງບັນທຶກ...' : (form.editingId ? 'ບັນທຶກການແກ້ໄຂ' : 'ບັນທຶກ') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </transition>
+    </div>
+  </transition>
 
-                const summary = computed(() => {
-                    let income = 0; let expense = 0;
-                    filteredTransactions.value.forEach(t => {
-                        if (t.type === 'income') income += Number(t.amount);
-                        if (t.type === 'expense') expense += Number(t.amount);
-                    });
-                    return { totalIncome: income, totalExpense: expense, balance: income - expense };
-                });
+  <!-- ======================= CONFIRM ======================= -->
+  <transition name="fade">
+    <div v-if="confirmState.open" class="no-print fixed inset-0 z-[80] bg-slate-900/50 backdrop-blur-[2px] flex items-center justify-center p-4" @click.self="closeConfirm(false)">
+      <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center">
+        <div class="w-14 h-14 mx-auto rounded-full flex items-center justify-center mb-4" :class="confirmState.danger ? 'bg-rose-50 text-rose-600' : 'bg-brand-50 text-brand-600'">
+          <app-icon :name="confirmState.danger ? 'trash' : 'info'" :size="26"></app-icon>
+        </div>
+        <h3 class="text-lg font-bold mb-1.5">{{ confirmState.title }}</h3>
+        <p class="text-sm text-slate-600 leading-relaxed mb-6 break-words">{{ confirmState.message }}</p>
+        <div class="flex gap-3">
+          <button @click="closeConfirm(false)" class="flex-1 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold">ຍົກເລີກ</button>
+          <button @click="closeConfirm(true)" class="flex-1 h-12 rounded-xl font-bold text-white" :class="confirmState.danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-brand-600 hover:bg-brand-700'">{{ confirmState.okText }}</button>
+        </div>
+      </div>
+    </div>
+  </transition>
 
-                const totalIncome = computed(() => summary.value.totalIncome);
-                const totalExpense = computed(() => summary.value.totalExpense);
-                const balance = computed(() => summary.value.balance);
+  <!-- ======================= TOASTS ======================= -->
+  <div class="no-print fixed z-[90] top-3 md:top-5 inset-x-0 flex flex-col items-center gap-2 pointer-events-none px-4 safe-t">
+    <transition-group name="toast">
+      <div v-for="t in toasts" :key="t.id" class="pointer-events-auto flex items-center gap-2.5 max-w-sm w-auto px-4 py-3 rounded-2xl shadow-lg text-sm font-semibold"
+        :class="t.type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-900 text-white'">
+        <app-icon :name="t.type === 'error' ? 'alert' : 'check'" :size="18"></app-icon><span>{{ t.msg }}</span>
+      </div>
+    </transition-group>
+  </div>
+</div>
 
-                // Initialize (check session from memory if desired, but here we require login every refresh for security, 
-                // or you could use localStorage to persist session. Here I keep it requiring login per reload.)
-                onMounted(() => {
-                    // If you want to auto-fetch when app loads (if persisted user), do it here.
-                });
+<script>
+/* =====================================================================
+   ຕັ້ງຄ່າ
+   ===================================================================== */
+// URL ຂອງ Google Apps Script Web App. ປ່ອຍວ່າງ = ໂໝດຕົວຢ່າງ (ໃຊ້ຂໍ້ມູນຈຳລອງ)
+const API_URL = 'https://script.google.com/macros/s/AKfycbxl9iY53p8C7yRdkrhVzn4Vx47Ra1-yqcmHpbnfHrQy1lsfcxxqlHiFCrC_U3cWb-ZR/exec';
+const ORG_NAME = 'ພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ';
+const ORG_SHORT = 'ພະແນກໂຄສະນາອົບຮົມ';
+const ORG_PLACE = 'ນະຄອນຫຼວງວຽງຈັນ';   // ສະຖານທີ່ໃນລາຍງານ
+const CATEGORIES = ['ເງິນອອກໂຄສະນາ', 'ເງິນບໍລິຫານ', 'ເງິນມ້ວນ', 'ເງິນເກັບ20ພັນ', 'ອື່ນໆ'];
+const CAT_COLORS = ['#3a66f0', '#f59e0b', '#10b981', '#8b5cf6', '#94a3b8'];
+const SESSION_KEY = 'acct_session_v2';
 
-                return {
-                    user, transactions, currentView, 
-                    loginUsername, loginPassword, loginError, isLoggingIn, handleLogin, logout,
-                    sheetUrl, isSettingsOpen, tempSheetUrl, isLoading, saveSettings, fetchTransactions,
-                    filterMonth, filterCategory,
-                    isModalOpen, editingData, formData, openNewModal, handleEdit, handleSave, handleDelete,
-                    reportMonth, reportCategory, reportTitle, carriedForward, handlePrint, getLaoMonthYear,
-                    filteredTransactions, totalIncome, totalExpense, balance, categories, formatMoney,
-                    alertMessage, confirmDialog, executeConfirm
-                };
-            }
-        }).mount('#app');
-    </script>
+/* ສັນຍາ API (ຝັ່ງ Apps Script ຕ້ອງຮອງຮັບ) — ທຸກຄຳຂໍເປັນ POST, body = JSON:
+   { action:'login',  data:{username,password} }   → { success, token, role, username, expiresAt }
+   { action:'list',   token }                      → { success, data:[{ID,Date,Type,Category,Description,Amount,AddedBy,EditedBy}] }
+   { action:'insert', token, data:{ID,Date,Type,Category,Description,Amount} } → { success }
+   { action:'update', token, data:{ID,...} }       → { success }
+   { action:'delete', token, data:{id} }           → { success }
+   { action:'logout', token }                      → { success }
+   ຖ້າ token ບໍ່ຖືກ/ໝົດອາຍຸ → { success:false, code:'AUTH' }. ບໍ່ມີສິດ → { success:false, code:'FORBIDDEN' }
+   ໝາຍເຫດ: AddedBy / EditedBy ໃຫ້ server ກຳນົດເອງຈາກ token (ບໍ່ເຊື່ອຄ່າຈາກໜ້າເວັບ). */
+
+/* =====================================================================
+   Helpers
+   ===================================================================== */
+const LAO_MONTHS = ['ມັງກອນ','ກຸມພາ','ມີນາ','ເມສາ','ພຶດສະພາ','ມິຖຸນາ','ກໍລະກົດ','ສິງຫາ','ກັນຍາ','ຕຸລາ','ພະຈິກ','ທັນວາ'];
+const LAO_MONTHS_SHORT = ['ມ.ກ','ກ.ພ','ມ.ນ','ມ.ສ','ພ.ພ','ມິ.ຖ','ກ.ລ','ສ.ຫ','ກ.ຍ','ຕ.ລ','ພ.ຈ','ທ.ວ'];
+const pad = n => String(n).padStart(2, '0');
+const toYMD = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;   // ວັນທີຕາມເວລາທ້ອງຖິ່ນ (ບໍ່ແມ່ນ UTC)
+const todayYMD = () => toYMD(new Date());
+const thisMonth = () => todayYMD().slice(0, 7);
+const formatNumber = n => Math.round(Number(n) || 0).toLocaleString('en-US');
+const formatMoney = n => formatNumber(n) + ' ₭';
+const signed = n => (n < 0 ? '−' : '') + formatNumber(Math.abs(n));
+const shortMoney = n => {
+  n = Number(n) || 0; const a = Math.abs(n);
+  if (a >= 1e9) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (a >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (a >= 1e3) return Math.round(n / 1e3) + 'K';
+  return String(Math.round(n));
+};
+const normalizeCategory = c => String(c || '').trim().replace(/ເງີນ/g, 'ເງິນ'); // ຮອງຮັບຂໍ້ມູນເກົ່າທີ່ສະກົດ "ເງີນ"
+const normalizeDate = v => {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  return isNaN(d.getTime()) ? s.slice(0, 10) : toYMD(d);
+};
+const uuid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+  : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+const laoDate = ymd => { if (!ymd) return '—'; const [y, m, d] = ymd.split('-'); return `${Number(d)} ${LAO_MONTHS[Number(m) - 1] || ''} ${y}`; };
+const laoDateShort = ymd => { if (!ymd) return '—'; const [y, m, d] = ymd.split('-'); return `${d}/${m}/${y}`; };
+const laoMonthYear = ym => { if (!ym) return 'ທຸກເດືອນ (ທັງໝົດ)'; const [y, m] = ym.split('-'); return `${LAO_MONTHS[Number(m) - 1]} ${y}`; };
+const shiftMonth = (ym, k) => { let [y, m] = ym.split('-').map(Number); m += k; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return `${y}-${pad(m)}`; };
+const sumOf = list => list.reduce((s, t) => { s[t.type] += t.amount; return s; }, { income: 0, expense: 0 });
+const niceMax = v => { const p = Math.pow(10, Math.floor(Math.log10(v))); for (const s of [1, 2, 2.5, 4, 5, 10]) if (s * p >= v) return s * p; return 10 * p; };
+const maskUrl = u => u.replace(/\/s\/([^/]{6})[^/]+([^/]{4})\//, '/s/$1••••$2/');
+
+function mapRow(row) {
+  return {
+    id: row.ID ?? row.id ?? '',
+    date: normalizeDate(row.Date ?? row.date),
+    type: String(row.Type ?? row.type ?? '').toLowerCase().trim() === 'income' ? 'income' : 'expense',
+    category: normalizeCategory(row.Category ?? row.category),
+    description: String(row.Description ?? row.description ?? '').trim(),
+    amount: Number(row.Amount ?? row.amount) || 0,
+    addedBy: row.AddedBy ?? row.addedBy ?? '',
+    editedBy: row.EditedBy ?? row.editedBy ?? ''
+  };
+}
+const toSheetRow = t => ({ ID: t.id, Date: t.date, Type: t.type === 'income' ? 'Income' : 'Expense', Category: t.category, Description: t.description, Amount: t.amount });
+
+function loadSession() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    if (s && s.token && s.expiresAt > Date.now()) return s;
+  } catch (e) {}
+  return null;
+}
+function saveSession(s) { try { s ? sessionStorage.setItem(SESSION_KEY, JSON.stringify(s)) : sessionStorage.removeItem(SESSION_KEY); } catch (e) {} }
+
+/* =====================================================================
+   Demo backend (ໃຊ້ເມື່ອ API_URL ວ່າງ) — ຈຳລອງພຶດຕິກຳ server ຈິງ ລວມທັງການກວດ token/ສິດ
+   ===================================================================== */
+const demo = (() => {
+  const users = { admin: { password: '1234', role: 'admin' }, member: { password: '1234', role: 'member' } };
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const r1000 = (a, b) => Math.round((a + rnd() * (b - a)) / 1000) * 1000;
+  const rows = [];
+  const now = new Date();
+  const EXP = [
+    ['ເງິນບໍລິຫານ', 'ຄ່າໄຟຟ້າ-ນ້ຳປະປາ ຫ້ອງການ', 300000, 650000],
+    ['ເງິນບໍລິຫານ', 'ຄ່າອິນເຕີເນັດຫ້ອງການ', 250000, 250000],
+    ['ເງິນບໍລິຫານ', 'ຊື້ເຄື່ອງໃຊ້ຫ້ອງການ (ເຈ້ຍ, ໝຶກພິມ)', 150000, 700000],
+    ['ເງິນບໍລິຫານ', 'ຄ່ານ້ຳມັນລົດລົງພື້ນທີ່', 200000, 600000],
+    ['ເງິນອອກໂຄສະນາ', 'ຄ່າພິມປ້າຍໄວນິວ', 400000, 1200000],
+    ['ເງິນອອກໂຄສະນາ', 'ຄ່າອອກອາກາດວິທະຍຸ', 500000, 1000000],
+    ['ເງິນອອກໂຄສະນາ', 'ຄ່າພິມໃບປິວເຜີຍແຜ່', 300000, 800000],
+    ['ອື່ນໆ', 'ຄ່າອາຫານກອງປະຊຸມ', 300000, 900000],
+    ['ອື່ນໆ', 'ຄ່າຂອງຂວັນຢ້ຽມຢາມ', 200000, 500000],
+    ['ເງິນມ້ວນ', 'ຈ່າຍເງິນມ້ວນໃຫ້ສະມາຊິກ', 1000000, 2000000]
+  ];
+  for (let k = 5; k >= 0; k--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - k, 1);
+    const ym = `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+    const lastDay = k === 0 ? now.getDate() : new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const add = (day, type, Category, Description, Amount) => {
+      if (day > lastDay) return;
+      rows.push({ ID: uuid(), Date: `${ym}-${pad(day)}`, Type: type, Category, Description, Amount, AddedBy: 'admin', EditedBy: '' });
+    };
+    add(1, 'Income', 'ເງິນບໍລິຫານ', 'ຮັບງົບປະມານບໍລິຫານປະຈຳເດືອນ', 3500000);
+    const members = 16 + Math.floor(rnd() * 6);
+    add(3, 'Income', 'ເງິນເກັບ20ພັນ', `ເງິນເກັບສະມາຊິກ ${members} ຄົນ × 20,000`, members * 20000);
+    add(4 + Math.floor(rnd() * 10), 'Income', 'ເງິນອອກໂຄສະນາ', 'ຮັບຄ່າໂຄສະນາ ' + pick(['ວິທະຍຸກະຈາຍສຽງ', 'ປ້າຍຂ້າງທາງ', 'ໜັງສືພິມທ້ອງຖິ່ນ', 'ໜ້າເພຈ Facebook']), r1000(800000, 2500000));
+    if (rnd() > 0.4) add(10 + Math.floor(rnd() * 12), 'Income', 'ເງິນມ້ວນ', 'ຮັບເງິນມ້ວນປະຈຳງວດ', r1000(1200000, 2400000));
+    const n = 5 + Math.floor(rnd() * 4);
+    for (let i = 0; i < n; i++) { const e = pick(EXP); add(2 + Math.floor(rnd() * 26), 'Expense', e[0], e[1], r1000(e[2], e[3])); }
+  }
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const parse = t => { const p = String(t || '').split('.'); return p[0] === 'demo' && users[p[2]] ? { role: users[p[2]].role, username: p[2] } : null; };
+  return {
+    async call(action, data, token) {
+      await wait(action === 'list' ? 450 : 300);
+      if (action === 'login') {
+        const u = users[data.username];
+        if (!u || u.password !== data.password) return { success: false, code: 'AUTH', error: 'ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ' };
+        return { success: true, token: `demo.${uuid()}.${data.username}`, role: u.role, username: data.username, expiresAt: Date.now() + 8 * 3600e3 };
+      }
+      const s = parse(token);
+      if (!s) return { success: false, code: 'AUTH', error: 'Session ໝົດອາຍຸ' };
+      if (action === 'logout') return { success: true };
+      if (action === 'list') return { success: true, data: rows.map(r => ({ ...r })) };
+      if (s.role !== 'admin') return { success: false, code: 'FORBIDDEN', error: 'ທ່ານບໍ່ມີສິດດຳເນີນການນີ້' };
+      if (action === 'insert') { rows.push({ ...data, AddedBy: s.username, EditedBy: '' }); return { success: true }; }
+      if (action === 'update') {
+        const i = rows.findIndex(r => r.ID === data.ID);
+        if (i < 0) return { success: false, error: 'ບໍ່ພົບລາຍການນີ້ໃນ Sheet' };
+        rows[i] = { ...rows[i], ...data, EditedBy: s.username }; return { success: true };
+      }
+      if (action === 'delete') {
+        const i = rows.findIndex(r => r.ID === data.id);
+        if (i < 0) return { success: false, error: 'ບໍ່ພົບລາຍການນີ້ໃນ Sheet' };
+        rows.splice(i, 1); return { success: true };
+      }
+      return { success: false, error: 'Unknown action' };
+    }
+  };
+})();
+
+/* =====================================================================
+   Icons (SVG ໃນໂຕ — ບໍ່ຕ້ອງໂຫຼດຈາກພາຍນອກ)
+   ===================================================================== */
+const ICONS = {
+  wallet: 'M20 12V8H6a2 2 0 0 1 0-4h12v4M4 6v12a2 2 0 0 0 2 2h14v-4M18 12a2 2 0 0 0 0 4h4v-4z',
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  list: 'M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01',
+  plus: 'M12 5v14M5 12h14',
+  printer: 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z',
+  settings: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  user: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
+  lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4',
+  shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
+  eye: 'M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  eyeOff: 'M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22M14.12 14.12a3 3 0 1 1-4.24-4.24',
+  alert: 'M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+  info: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01',
+  check: 'M20 6 9 17l-5-5',
+  x: 'M18 6 6 18M6 6l12 12',
+  refresh: 'M23 4v6h-6M1 20v-6h6M3.5 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.65 4.36A9 9 0 0 0 20.5 15',
+  loader: 'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83',
+  search: 'M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35',
+  edit: 'M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z',
+  trash: 'M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6',
+  download: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',
+  arrowDown: 'M17 7 7 17M17 17H7V7',
+  arrowUp: 'M7 17 17 7M7 7h10v10',
+  chevLeft: 'M15 18l-6-6 6-6',
+  chevRight: 'M9 18l6-6-6-6',
+  link: 'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'
+};
+const AppIcon = {
+  props: { name: String, size: { type: [Number, String], default: 20 } },
+  setup() { return { ICONS }; },
+  template: `<svg :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path :d="ICONS[name]"></path></svg>`
+};
+
+/* =====================================================================
+   App
+   ===================================================================== */
+const { createApp, ref, reactive, computed, watch, onMounted, onBeforeUnmount } = Vue;
+
+const app = createApp({
+  setup() {
+    const isDemo = !API_URL;
+    const session = ref(loadSession());
+    const isAdmin = computed(() => session.value?.role === 'admin');
+    const view = ref('dashboard');
+    const transactions = ref([]);
+    const loading = ref(false);
+    const connection = ref(isDemo ? 'demo' : 'idle');
+    const lastSync = ref(null);
+    const deletingId = ref(null);
+
+    /* ---- toast / confirm ---- */
+    const toasts = ref([]);
+    const toast = (msg, type = 'success') => {
+      const id = Date.now() + Math.random();
+      toasts.value.push({ id, msg, type });
+      setTimeout(() => { toasts.value = toasts.value.filter(t => t.id !== id); }, type === 'error' ? 4500 : 2800);
+    };
+    const confirmState = reactive({ open: false, title: '', message: '', okText: 'ຢືນຢັນ', danger: true, resolve: null });
+    const askConfirm = opts => new Promise(resolve => Object.assign(confirmState, { open: true, title: 'ຢືນຢັນ', okText: 'ຢືນຢັນ', danger: true, ...opts, resolve }));
+    const closeConfirm = v => { confirmState.open = false; confirmState.resolve && confirmState.resolve(v); confirmState.resolve = null; };
+
+    /* ---- API ---- */
+    async function api(action, data = {}) {
+      const token = session.value?.token;
+      let json;
+      try {
+        if (isDemo) json = await demo.call(action, data, token);
+        else {
+          const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ຫຼີກ CORS preflight ຂອງ Apps Script
+            body: JSON.stringify({ action, token, data })
+          });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          json = await res.json();
+        }
+      } catch (e) {
+        if (!isDemo) connection.value = 'error';
+        throw new Error('ເຊື່ອມຕໍ່ເຊີບເວີບໍ່ໄດ້ ກະລຸນາກວດສອບອິນເຕີເນັດ');
+      }
+      if (!isDemo) connection.value = 'online';
+      if (json && json.code === 'AUTH' && action !== 'login') { endSession(); throw new Error('ການເຂົ້າສູ່ລະບົບໝົດອາຍຸ ກະລຸນາເຂົ້າໃໝ່'); }
+      if (!json || !json.success) throw new Error((json && json.error) || 'ເກີດຂໍ້ຜິດພາດ ກະລຸນາລອງໃໝ່');
+      return json;
+    }
+
+    /* ---- auth ---- */
+    const login = reactive({ username: '', password: '', error: '', busy: false, show: false });
+    async function handleLogin() {
+      if (login.busy) return;
+      login.busy = true; login.error = '';
+      try {
+        const r = await api('login', { username: login.username.trim(), password: login.password });
+        session.value = { token: r.token, role: r.role, username: r.username || login.username.trim(), expiresAt: r.expiresAt || Date.now() + 8 * 3600e3 };
+        saveSession(session.value);
+        login.password = ''; login.show = false;
+        view.value = 'dashboard';
+        fetchTransactions();
+      } catch (e) { login.error = e.message; }
+      finally { login.busy = false; }
+    }
+    function endSession() {
+      session.value = null; saveSession(null);
+      transactions.value = []; form.open = false; confirmState.open = false;
+      if (!isDemo) connection.value = 'idle';
+    }
+    async function logout() {
+      const ok = await askConfirm({ title: 'ອອກຈາກລະບົບ', message: 'ທ່ານຕ້ອງການອອກຈາກລະບົບແທ້ບໍ່?', okText: 'ອອກຈາກລະບົບ', danger: false });
+      if (!ok) return;
+      api('logout').catch(() => {});
+      endSession();
+    }
+
+    /* ---- data ---- */
+    async function fetchTransactions() {
+      if (!session.value || loading.value) return;
+      loading.value = true;
+      try {
+        const r = await api('list');
+        transactions.value = (r.data || []).map(mapRow);
+        lastSync.value = new Date();
+      } catch (e) { toast(e.message, 'error'); }
+      finally { loading.value = false; }
+    }
+    const busy = computed(() => loading.value || form.saving || !!deletingId.value);
+
+    /* ---- navigation ---- */
+    const navItems = computed(() => [
+      { key: 'dashboard', label: 'ໜ້າຫຼັກ', short: 'ໜ້າຫຼັກ', icon: 'home' },
+      { key: 'transactions', label: 'ລາຍການທັງໝົດ', short: 'ລາຍການ', icon: 'list' },
+      { key: 'report', label: 'ລາຍງານ / ພິມ', short: 'ລາຍງານ', icon: 'printer' },
+      { key: 'settings', label: 'ບັນຊີ & ຕັ້ງຄ່າ', short: 'ຕັ້ງຄ່າ', icon: 'settings' }
+    ]);
+    const mobileNav = computed(() => {
+      const n = navItems.value.slice();
+      if (isAdmin.value) n.splice(2, 0, { key: 'add' });
+      return n;
+    });
+    const viewTitle = computed(() => (navItems.value.find(n => n.key === view.value) || {}).label || '');
+    const go = k => { view.value = k; const m = document.querySelector('main'); if (m) m.scrollTop = 0; };
+
+    const conn = computed(() => ({
+      demo:   { label: 'ໂໝດຕົວຢ່າງ', dot: 'bg-amber-500', pill: 'bg-amber-50 border-amber-200 text-amber-700', text: 'text-amber-700' },
+      online: { label: 'ເຊື່ອມຕໍ່ແລ້ວ', dot: 'bg-emerald-500', pill: 'bg-emerald-50 border-emerald-200 text-emerald-700', text: 'text-emerald-700' },
+      error:  { label: 'ເຊື່ອມຕໍ່ບໍ່ໄດ້', dot: 'bg-rose-500', pill: 'bg-rose-50 border-rose-200 text-rose-700', text: 'text-rose-700' },
+      idle:   { label: 'ກຳລັງເຊື່ອມ...', dot: 'bg-slate-400', pill: 'bg-slate-50 border-slate-200 text-slate-600', text: 'text-slate-500' }
+    })[connection.value]);
+
+    /* ---- categories ---- */
+    const allCategories = computed(() => {
+      const extra = new Set();
+      transactions.value.forEach(t => { if (t.category && !CATEGORIES.includes(t.category)) extra.add(t.category); });
+      return [...CATEGORIES, ...extra];
+    });
+    const catColor = name => CAT_COLORS[CATEGORIES.indexOf(name)] || '#64748b';
+
+    /* ---- dashboard ---- */
+    const dashMonth = ref(thisMonth());
+    const shiftDashMonth = k => { if (dashMonth.value) dashMonth.value = shiftMonth(dashMonth.value, k); };
+    const dashList = computed(() => dashMonth.value ? transactions.value.filter(t => t.date.startsWith(dashMonth.value)) : transactions.value);
+    const dashSum = computed(() => { const s = sumOf(dashList.value); return { ...s, net: s.income - s.expense }; });
+    const prevSum = computed(() => dashMonth.value ? sumOf(transactions.value.filter(t => t.date.startsWith(shiftMonth(dashMonth.value, -1)))) : null);
+    const pct = (cur, prev) => prev ? Math.round((cur - prev) / prev * 100) : null;
+    const incomeChange = computed(() => prevSum.value ? pct(dashSum.value.income, prevSum.value.income) : null);
+    const expenseChange = computed(() => prevSum.value ? pct(dashSum.value.expense, prevSum.value.expense) : null);
+    const cumulativeBalance = computed(() => {
+      const end = dashMonth.value ? dashMonth.value + '-31' : '9999-12-31';
+      const s = sumOf(transactions.value.filter(t => t.date <= end));
+      return s.income - s.expense;
+    });
+    const recent = computed(() => dashList.value.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6));
+
+    const chartYear = ref(new Date().getFullYear());
+    watch(dashMonth, v => { if (v) chartYear.value = Number(v.slice(0, 4)); });
+    const yearsAvailable = computed(() => {
+      const ys = new Set([new Date().getFullYear()]);
+      transactions.value.forEach(t => { const y = Number(t.date.slice(0, 4)); if (y) ys.add(y); });
+      return [...ys].sort((a, b) => b - a);
+    });
+    const monthly = computed(() => {
+      const arr = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
+      const y = String(chartYear.value);
+      transactions.value.forEach(t => { if (t.date.slice(0, 4) === y) { const i = Number(t.date.slice(5, 7)) - 1; if (arr[i]) arr[i][t.type] += t.amount; } });
+      return arr;
+    });
+    const chartMax = computed(() => niceMax(Math.max(1, ...monthly.value.flatMap(m => [m.income, m.expense]))));
+    const barH = v => v > 0 ? Math.max(2, v / chartMax.value * 180) : 0;
+    const hoverMonth = ref(null);
+    const isSelectedChartMonth = i => dashMonth.value === `${chartYear.value}-${pad(i + 1)}`;
+
+    const catMode = ref('expense');
+    const catBreakdown = computed(() => {
+      const map = {};
+      dashList.value.forEach(t => { if (t.type === catMode.value) map[t.category] = (map[t.category] || 0) + t.amount; });
+      const total = Object.values(map).reduce((a, b) => a + b, 0);
+      return { total, items: Object.entries(map).map(([name, v]) => ({ name, v, pct: total ? v / total * 100 : 0 })).sort((a, b) => b.v - a.v) };
+    });
+
+    /* ---- transactions list ---- */
+    const f = reactive({ q: '', type: '', category: '', month: '' });
+    const typeOptions = [
+      { v: '', label: 'ທັງໝົດ', on: 'text-slate-800' },
+      { v: 'income', label: 'ລາຍຮັບ', on: 'text-emerald-600' },
+      { v: 'expense', label: 'ລາຍຈ່າຍ', on: 'text-rose-600' }
+    ];
+    const hasFilter = computed(() => !!(f.q || f.type || f.category || f.month));
+    const clearFilters = () => Object.assign(f, { q: '', type: '', category: '', month: '' });
+    const txList = computed(() => {
+      const q = f.q.trim().toLowerCase();
+      const qNum = q.replace(/[,\s]/g, '');
+      return transactions.value.filter(t =>
+        (!f.type || t.type === f.type) &&
+        (!f.category || t.category === f.category) &&
+        (!f.month || t.date.startsWith(f.month)) &&
+        (!q || t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || (qNum && /^\d+$/.test(qNum) && String(t.amount).includes(qNum)))
+      ).sort((a, b) => b.date.localeCompare(a.date));
+    });
+    const txSum = computed(() => sumOf(txList.value));
+    const txLimit = ref(60);
+    watch(f, () => { txLimit.value = 60; });
+    const txVisible = computed(() => txList.value.slice(0, txLimit.value));
+    const txGroups = computed(() => {
+      const groups = []; let cur = null;
+      txVisible.value.forEach(t => {
+        if (!cur || cur.date !== t.date) { cur = { date: t.date, items: [], net: 0 }; groups.push(cur); }
+        cur.items.push(t); cur.net += t.type === 'income' ? t.amount : -t.amount;
+      });
+      return groups;
+    });
+
+    function exportCSV() {
+      const esc = v => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g, '""')}"`; }; // ກັນ CSV injection
+      const rows = [['ວັນທີ', 'ປະເພດ', 'ໝວດໝູ່', 'ລາຍລະອຽດ', 'ລາຍຮັບ', 'ລາຍຈ່າຍ', 'ຜູ້ບັນທຶກ']];
+      txList.value.slice().reverse().forEach(t => rows.push([t.date, t.type === 'income' ? 'ລາຍຮັບ' : 'ລາຍຈ່າຍ', t.category, t.description, t.type === 'income' ? t.amount : '', t.type === 'expense' ? t.amount : '', t.addedBy]));
+      const csv = '﻿' + rows.map(r => r.map((v, i) => (i >= 4 && i <= 5 && v !== '') ? v : esc(v)).join(',')).join('\r\n');
+      try {
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+        const a = document.createElement('a');
+        a.href = url; a.download = `ບັນຊີ_${f.month || 'ທັງໝົດ'}_${todayYMD()}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        toast('ສົ່ງອອກ CSV ແລ້ວ');
+      } catch (e) { toast('ດາວໂຫຼດບໍ່ໄດ້ໃນ browser ນີ້', 'error'); }
+    }
+
+    /* ---- form ---- */
+    const form = reactive({ open: false, editingId: null, date: '', type: 'expense', category: CATEGORIES[0], amount: '', description: '', saving: false, error: '' });
+    const amountDisplay = computed({
+      get: () => form.amount === '' ? '' : formatNumber(form.amount),
+      set: v => { const d = String(v).replace(/\D/g, '').slice(0, 13); form.amount = d ? Number(d) : ''; }
+    });
+    const quickAmounts = [10000, 50000, 100000, 500000, 1000000];
+    const formCategories = computed(() => allCategories.value.includes(form.category) ? allCategories.value : [...allCategories.value, form.category]);
+    const descSuggestions = computed(() => {
+      if (form.editingId) return [];
+      const q = form.description.trim().toLowerCase();
+      const seen = new Map();
+      transactions.value.slice().sort((a, b) => b.date.localeCompare(a.date)).forEach(t => {
+        if (t.type !== form.type || t.category !== form.category || !t.description) return;
+        if (q && (!t.description.toLowerCase().includes(q) || t.description.toLowerCase() === q)) return;
+        if (!seen.has(t.description)) seen.set(t.description, 1);
+      });
+      return [...seen.keys()].slice(0, 4);
+    });
+    function openNew(type) {
+      if (!isAdmin.value) return;
+      Object.assign(form, { open: true, editingId: null, date: todayYMD(), type: type || 'expense', category: CATEGORIES[0], amount: '', description: '', saving: false, error: '' });
+    }
+    function openEdit(t) {
+      if (!isAdmin.value) return;
+      if (!t.id) { toast('ລາຍການນີ້ບໍ່ມີລະຫັດ ກະລຸນາແກ້ໄຂໃນ Sheet ໂດຍກົງ', 'error'); return; }
+      Object.assign(form, { open: true, editingId: t.id, date: t.date, type: t.type, category: t.category || CATEGORIES[0], amount: t.amount, description: t.description, saving: false, error: '' });
+    }
+    function closeForm() { if (!form.saving) form.open = false; }
+    async function saveForm() {
+      if (form.saving) return;          // ກັນກົດບັນທຶກຊ້ຳ
+      form.error = '';
+      if (!form.date) return (form.error = 'ກະລຸນາເລືອກວັນທີ');
+      if (!(Number(form.amount) > 0)) return (form.error = 'ກະລຸນາປ້ອນຈຳນວນເງິນໃຫ້ຫຼາຍກວ່າ 0');
+      if (!form.description.trim()) return (form.error = 'ກະລຸນາປ້ອນລາຍລະອຽດ');
+      form.saving = true;
+      const isEdit = !!form.editingId;
+      const orig = isEdit ? transactions.value.find(t => t.id === form.editingId) : null;
+      const record = {
+        id: isEdit ? form.editingId : uuid(),
+        date: form.date, type: form.type, category: form.category,
+        description: form.description.trim(), amount: Number(form.amount),
+        addedBy: isEdit ? (orig?.addedBy || '') : session.value.username,   // ເກັບຊື່ຜູ້ບັນທຶກເດີມໄວ້
+        editedBy: isEdit ? session.value.username : ''
+      };
+      try {
+        // ບັນທຶກລົງ Sheet ໃຫ້ສຳເລັດກ່ອນ ຈຶ່ງອັບເດດໜ້າຈໍ → ບໍ່ມີລາຍການຜີ
+        await api(isEdit ? 'update' : 'insert', toSheetRow(record));
+        transactions.value = isEdit ? transactions.value.map(t => t.id === record.id ? record : t) : [...transactions.value, record];
+        form.open = false;
+        toast(isEdit ? 'ບັນທຶກການແກ້ໄຂແລ້ວ' : 'ເພີ່ມລາຍການແລ້ວ');
+      } catch (e) { form.error = e.message; }
+      finally { form.saving = false; }
+    }
+    async function removeTx(t) {
+      if (!isAdmin.value || busy.value) return;
+      if (!t.id) { toast('ລາຍການນີ້ບໍ່ມີລະຫັດ ກະລຸນາລຶບໃນ Sheet ໂດຍກົງ', 'error'); return; }
+      const ok = await askConfirm({ title: 'ລຶບລາຍການ', message: `ລຶບ "${t.description}" (${formatMoney(t.amount)}) ອອກຈາກ Google Sheet ແທ້ບໍ່? ກູ້ຄືນບໍ່ໄດ້.`, okText: 'ລຶບ' });
+      if (!ok) return;
+      deletingId.value = t.id;
+      try {
+        await api('delete', { id: t.id });
+        transactions.value = transactions.value.filter(x => x.id !== t.id);
+        toast('ລຶບລາຍການແລ້ວ');
+      } catch (e) { toast(e.message, 'error'); }
+      finally { deletingId.value = null; }
+    }
+
+    /* ---- report ---- */
+    const rep = reactive({ title: 'ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ', month: thisMonth(), category: '', cfMode: 'auto', cfManual: '', preparer: '', head: '', national: true });
+    const cfManualDisplay = computed({
+      get: () => rep.cfManual === '' ? '' : (rep.cfManual < 0 ? '-' : '') + formatNumber(Math.abs(rep.cfManual)),
+      set: v => { const s = String(v); const neg = s.trim().startsWith('-'); const d = s.replace(/\D/g, '').slice(0, 13); rep.cfManual = d ? (neg ? -1 : 1) * Number(d) : (neg ? '' : ''); }
+    });
+    const repFilter = t => !rep.category || t.category === rep.category;
+    const autoCarried = computed(() => {
+      if (!rep.month) return 0;
+      const start = rep.month + '-01';
+      const s = sumOf(transactions.value.filter(t => t.date < start && repFilter(t)));
+      return s.income - s.expense;
+    });
+    const carried = computed(() => rep.cfMode === 'auto' ? autoCarried.value : (Number(rep.cfManual) || 0));
+    const repList = computed(() => transactions.value.filter(t => (!rep.month || t.date.startsWith(rep.month)) && repFilter(t)).sort((a, b) => a.date.localeCompare(b.date)));
+    const repRows = computed(() => { let bal = carried.value; return repList.value.map((t, i) => { bal += t.type === 'income' ? t.amount : -t.amount; return { ...t, no: i + 1, bal }; }); });
+    const repSum = computed(() => { const s = sumOf(repList.value); return { ...s, end: carried.value + s.income - s.expense }; });
+    const repByCat = computed(() => allCategories.value.map(name => {
+      const s = sumOf(repList.value.filter(t => t.category === name));
+      return { name, income: s.income, expense: s.expense };
+    }).filter(c => c.income || c.expense));
+    function printReport() {
+      try { window.print(); } catch (e) { toast('ບໍ່ສາມາດສັ່ງພິມໄດ້ໃນ browser ນີ້', 'error'); }
+    }
+
+    /* ---- misc ---- */
+    const timeText = (d, withDate) => {
+      if (!d) return '';
+      const t = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return withDate ? `${laoDate(toYMD(d))} ${t}` : t;
+    };
+    let timer;
+    const onKey = e => { if (e.key === 'Escape') { if (confirmState.open) closeConfirm(false); else if (form.open) closeForm(); } };
+    onMounted(() => {
+      if (session.value) fetchTransactions();
+      document.addEventListener('keydown', onKey);
+      timer = setInterval(() => {
+        if (session.value && session.value.expiresAt < Date.now()) { endSession(); toast('ການເຂົ້າສູ່ລະບົບໝົດອາຍຸ ກະລຸນາເຂົ້າໃໝ່', 'error'); }
+      }, 30000);
+    });
+    onBeforeUnmount(() => { clearInterval(timer); document.removeEventListener('keydown', onKey); });
+
+    return {
+      API_URL, ORG_NAME, ORG_SHORT, ORG_PLACE, LAO_MONTHS, LAO_MONTHS_SHORT,
+      isDemo, session, isAdmin, view, transactions, loading, lastSync, deletingId, busy, conn,
+      toasts, confirmState, closeConfirm,
+      login, handleLogin, logout, fetchTransactions,
+      navItems, mobileNav, viewTitle, go,
+      allCategories, catColor,
+      dashMonth, shiftDashMonth, dashList, dashSum, incomeChange, expenseChange, cumulativeBalance, recent,
+      chartYear, yearsAvailable, monthly, chartMax, barH, hoverMonth, isSelectedChartMonth, catMode, catBreakdown,
+      f, typeOptions, hasFilter, clearFilters, txList, txSum, txLimit, txVisible, txGroups, exportCSV,
+      form, amountDisplay, quickAmounts, formCategories, descSuggestions, openNew, openEdit, closeForm, saveForm, removeTx,
+      rep, cfManualDisplay, carried, repRows, repSum, repByCat, printReport,
+      formatNumber, formatMoney, signed, shortMoney, laoDate, laoDateShort, laoMonthYear, todayYMD, thisMonth, timeText, maskUrl
+    };
+  }
+});
+app.component('AppIcon', AppIcon);
+app.mount('#app');
+</script>
 </body>
 </html>
