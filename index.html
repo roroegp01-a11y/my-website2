@@ -597,14 +597,14 @@
             <p class="mt-8 text-right avoid-break">{{ ORG_PLACE }}, ວັນທີ ........../........../..............</p>
             <div class="mt-4 grid grid-cols-2 gap-8 text-center avoid-break">
               <div>
-                <p class="font-bold">ພະນັກງານຄິດໄລ່</p>
-                <div class="h-20"></div>
-                <p>( {{ rep.preparer || '..........................................' }} )</p>
-              </div>
-              <div>
                 <p class="font-bold">ຫົວໜ້າ{{ ORG_NAME }}</p>
                 <div class="h-20"></div>
                 <p>( {{ rep.head || '..........................................' }} )</p>
+              </div>
+              <div>
+                <p class="font-bold">ພະນັກງານຄິດໄລ່</p>
+                <div class="h-20"></div>
+                <p>( {{ rep.preparer || '..........................................' }} )</p>
               </div>
             </div>
             <p class="mt-10 pt-3 border-t border-slate-200 text-[10.5px] text-slate-400 flex justify-between">
@@ -761,7 +761,7 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbxl9iY53p8C7yRdkrhVzn4Vx47Ra1-yqcmHpbnfHrQy1lsfcxxqlHiFCrC_U3cWb-ZR/exec';
 const ORG_NAME = 'ພະແນກໂຄສະນາອົບຮົມ-ຂ່າວສານ';
 const ORG_SHORT = 'ພະແນກໂຄສະນາອົບຮົມ';
-const ORG_PLACE = 'ນະຄອນຫຼວງວຽງຈັນ';   // ສະຖານທີ່ໃນລາຍງານ
+const ORG_PLACE = 'ຄຳມ່ວນ';   // ສະຖານທີ່ໃນລາຍງານ
 const CATEGORIES = ['ເງິນອອກໂຄສະນາ', 'ເງິນບໍລິຫານ', 'ເງິນມ້ວນ', 'ເງິນເກັບ20ພັນ', 'ອື່ນໆ'];
 const CAT_COLORS = ['#3a66f0', '#f59e0b', '#10b981', '#8b5cf6', '#94a3b8'];
 const SESSION_KEY = 'acct_session_v2';
