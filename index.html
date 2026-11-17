@@ -203,22 +203,26 @@
 
       <!-- ========== DASHBOARD ========== -->
       <section v-if="view === 'dashboard'" class="max-w-7xl mx-auto p-4 md:p-8 space-y-5 md:space-y-6">
-        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-3">
           <div class="hidden md:block">
             <h1 class="text-2xl font-bold">ສະບາຍດີ, {{ session.username }}</h1>
-            <p class="text-slate-500 text-sm mt-1">ພາບລວມການເງິນ {{ dashMonth ? 'ປະຈຳເດືອນ ' + laoMonthYear(dashMonth) : 'ທັງໝົດ' }}</p>
+            <p class="text-slate-500 text-sm mt-1">ພາບລວມການເງິນ {{ periodLabel(dash) }}<span v-if="dash.category"> · ໝວດ <b class="text-slate-700">{{ dash.category }}</b></span></p>
           </div>
-          <div class="flex items-center gap-2">
-            <div class="flex-1 md:flex-none flex items-center bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
-              <button @click="shiftDashMonth(-1)" :disabled="!dashMonth" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30" aria-label="ເດືອນກ່ອນ"><app-icon name="chevLeft" :size="18"></app-icon></button>
-              <input type="month" v-model="dashMonth" class="flex-1 md:w-40 bg-transparent text-sm font-semibold text-center outline-none min-h-0 h-9">
-              <button @click="shiftDashMonth(1)" :disabled="!dashMonth" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 disabled:opacity-30" aria-label="ເດືອນຖັດໄປ"><app-icon name="chevRight" :size="18"></app-icon></button>
+          <div class="flex flex-col md:flex-row md:flex-wrap md:items-center gap-2">
+            <period-picker :p="dash" :years="yearsAvailable"></period-picker>
+            <div class="flex gap-2">
+              <div class="relative flex-1 md:flex-none">
+                <select v-model="dash.category" class="w-full md:w-48 h-11 rounded-xl border bg-white pl-9 pr-3 text-sm font-semibold outline-none shadow-sm focus:border-brand-500 appearance-none"
+                  :class="dash.category ? 'border-brand-500 text-brand-700' : 'border-slate-200 text-slate-700'">
+                  <option value="">ທຸກໝວດໝູ່</option>
+                  <option v-for="c in allCategories" :key="c" :value="c">{{ c }}</option>
+                </select>
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full pointer-events-none" :style="{ background: dash.category ? catColor(dash.category) : '#cbd5e1' }"></span>
+              </div>
+              <button @click="fetchTransactions()" :disabled="loading" class="hidden md:flex h-11 px-4 rounded-xl bg-white border border-slate-200 shadow-sm items-center gap-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
+                <app-icon name="refresh" :size="17" :class="loading ? 'spin text-brand-600' : ''"></app-icon> ໂຫຼດໃໝ່
+              </button>
             </div>
-            <button @click="dashMonth = dashMonth ? '' : thisMonth()" class="h-11 px-4 rounded-xl text-sm font-bold border shadow-sm transition"
-              :class="!dashMonth ? 'bg-brand-600 text-white border-brand-600' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'">{{ dashMonth ? 'ທັງໝົດ' : 'ເດືອນນີ້' }}</button>
-            <button @click="fetchTransactions()" :disabled="loading" class="hidden md:flex h-11 px-4 rounded-xl bg-white border border-slate-200 shadow-sm items-center gap-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60">
-              <app-icon name="refresh" :size="17" :class="loading ? 'spin text-brand-600' : ''"></app-icon> ໂຫຼດໃໝ່
-            </button>
           </div>
         </div>
 
@@ -231,7 +235,7 @@
             </div>
             <p class="num mt-2 text-lg md:text-2xl font-bold text-slate-900 truncate">{{ formatMoney(dashSum.income) }}</p>
             <p v-if="incomeChange !== null" class="mt-1 text-[11px] md:text-xs font-semibold" :class="incomeChange >= 0 ? 'text-emerald-600' : 'text-rose-600'">
-              {{ incomeChange >= 0 ? '▲' : '▼' }} {{ Math.abs(incomeChange) }}% <span class="font-normal text-slate-400">ທຽບເດືອນກ່ອນ</span>
+              {{ incomeChange >= 0 ? '▲' : '▼' }} {{ Math.abs(incomeChange) }}% <span class="font-normal text-slate-400">{{ compareLabel(dash) }}</span>
             </p>
           </div>
           <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/70 shadow-sm">
@@ -241,22 +245,44 @@
             </div>
             <p class="num mt-2 text-lg md:text-2xl font-bold text-slate-900 truncate">{{ formatMoney(dashSum.expense) }}</p>
             <p v-if="expenseChange !== null" class="mt-1 text-[11px] md:text-xs font-semibold" :class="expenseChange <= 0 ? 'text-emerald-600' : 'text-rose-600'">
-              {{ expenseChange >= 0 ? '▲' : '▼' }} {{ Math.abs(expenseChange) }}% <span class="font-normal text-slate-400">ທຽບເດືອນກ່ອນ</span>
+              {{ expenseChange >= 0 ? '▲' : '▼' }} {{ Math.abs(expenseChange) }}% <span class="font-normal text-slate-400">{{ compareLabel(dash) }}</span>
             </p>
           </div>
           <div class="bg-white rounded-2xl p-4 md:p-5 border border-slate-200/70 shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs md:text-sm font-semibold text-slate-500">ສ່ວນຕ່າງ (ຮັບ − ຈ່າຍ)</span>
-            </div>
+            <span class="text-xs md:text-sm font-semibold text-slate-500">ສ່ວນຕ່າງ (ຮັບ − ຈ່າຍ)</span>
             <p class="num mt-2 text-lg md:text-2xl font-bold truncate" :class="dashSum.net >= 0 ? 'text-emerald-600' : 'text-rose-600'">{{ dashSum.net >= 0 ? '+' : '−' }}{{ formatMoney(Math.abs(dashSum.net)) }}</p>
             <p class="mt-1 text-[11px] md:text-xs text-slate-400">{{ dashList.length }} ລາຍການ</p>
           </div>
           <div class="rounded-2xl p-4 md:p-5 text-white shadow-md relative overflow-hidden"
                :class="cumulativeBalance >= 0 ? 'bg-gradient-to-br from-brand-600 to-brand-800 shadow-brand-700/25' : 'bg-gradient-to-br from-rose-600 to-rose-700 shadow-rose-700/25'">
             <div class="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/10"></div>
-            <span class="relative text-xs md:text-sm font-semibold text-white/80">ເງິນຄົງເຫຼືອສະສົມ</span>
+            <span class="relative text-xs md:text-sm font-semibold text-white/80">ເງິນຄົງເຫຼືອສະສົມ{{ dash.category ? ' (' + dash.category + ')' : '' }}</span>
             <p class="relative num mt-2 text-lg md:text-2xl font-bold truncate">{{ formatMoney(cumulativeBalance) }}</p>
-            <p class="relative mt-1 text-[11px] md:text-xs text-white/70">{{ dashMonth ? 'ຮອດທ້າຍ ' + laoMonthYear(dashMonth) : 'ທຸກລາຍການ' }}</p>
+            <p class="relative mt-1 text-[11px] md:text-xs text-white/70">ຮອດ{{ periodEndLabel(dash) }}</p>
+          </div>
+        </div>
+
+        <!-- Category balances -->
+        <div>
+          <div class="flex flex-wrap items-end justify-between gap-x-3 gap-y-1 mb-2.5">
+            <h2 class="font-bold">ຍອດຄົງເຫຼືອແຕ່ລະໝວດ</h2>
+            <span class="text-[11px] md:text-xs text-slate-500">ຍອດເຫຼືອສະສົມຮອດ{{ periodEndLabel(dash) }} · ຮັບ/ຈ່າຍ{{ dash.mode === 'all' ? 'ທັງໝົດ' : 'ໃນ' + periodLabel(dash) }} · ກົດເພື່ອເລືອກໝວດ</span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+            <button v-for="c in dashCatBalances" :key="c.name" @click="dash.category = dash.category === c.name ? '' : c.name"
+              class="text-left bg-white rounded-2xl p-3.5 md:p-4 border shadow-sm transition hover:border-brand-300 relative overflow-hidden"
+              :class="dash.category === c.name ? 'border-brand-500 ring-4 ring-brand-100' : (dash.category ? 'border-slate-200/70 opacity-60 hover:opacity-100' : 'border-slate-200/70')">
+              <span class="absolute left-0 top-0 bottom-0 w-1" :style="{ background: catColor(c.name) }"></span>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-semibold text-slate-600 truncate">{{ c.name }}</span>
+                <app-icon v-if="dash.category === c.name" name="check" :size="15" class="text-brand-600"></app-icon>
+              </div>
+              <p class="num mt-1.5 text-base md:text-lg font-bold truncate" :class="c.balance < 0 ? 'text-rose-600' : 'text-slate-900'">{{ formatMoney(c.balance) }}</p>
+              <div class="mt-1.5 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[11px] num font-semibold">
+                <span class="text-emerald-600">+{{ formatNumber(c.income) }}</span>
+                <span class="text-rose-500">−{{ formatNumber(c.expense) }}</span>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -264,28 +290,29 @@
           <!-- Monthly chart -->
           <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 md:p-6">
             <div class="flex items-center justify-between gap-3 mb-4">
-              <div>
-                <h2 class="font-bold">ລາຍຮັບ-ລາຍຈ່າຍ ລາຍເດືອນ</h2>
+              <div class="min-w-0">
+                <h2 class="font-bold truncate">ລາຍຮັບ-ລາຍຈ່າຍ ລາຍເດືອນ<span v-if="dash.category" class="text-slate-400 font-semibold"> · {{ dash.category }}</span></h2>
                 <div class="flex items-center gap-4 mt-1 text-xs text-slate-500">
                   <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>ລາຍຮັບ</span>
                   <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-rose-400"></span>ລາຍຈ່າຍ</span>
                 </div>
               </div>
-              <select v-model.number="chartYear" class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-brand-500">
+              <select v-if="dash.mode === 'all'" v-model.number="chartYearAll" class="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold outline-none focus:border-brand-500">
                 <option v-for="y in yearsAvailable" :key="y" :value="y">ປີ {{ y }}</option>
               </select>
+              <span v-else class="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-semibold flex items-center">ປີ {{ chartYear }}</span>
             </div>
             <div class="relative">
               <svg viewBox="0 0 640 240" class="w-full h-auto" role="img" aria-label="ກຣາຟລາຍຮັບລາຍຈ່າຍລາຍເດືອນ">
                 <g v-for="i in 5" :key="'g'+i">
                   <line x1="48" :x2="636" :y1="12 + (i-1)*45" :y2="12 + (i-1)*45" stroke="#e8ecf3" stroke-width="1"></line>
-                  <text x="42" :y="16 + (i-1)*45" text-anchor="end" font-size="10" fill="#94a3b8">{{ shortMoney(chartMax * (5-i) / 4) }}</text>
+                  <text x="42" :y="16 + (i-1)*45" text-anchor="end" font-size="11" fill="#94a3b8">{{ shortMoney(chartMax * (5-i) / 4) }}</text>
                 </g>
-                <g v-for="(mo, i) in monthly" :key="'m'+i" @mouseenter="hoverMonth = i" @mouseleave="hoverMonth = null" @click="hoverMonth = hoverMonth === i ? null : i" style="cursor:pointer">
+                <g v-for="(mo, i) in monthly" :key="'m'+i" @mouseenter="hoverMonth = i" @mouseleave="hoverMonth = null" @click="pickChartMonth(i)" style="cursor:pointer">
                   <rect :x="50 + i*49" y="8" width="47" height="196" :fill="hoverMonth === i || isSelectedChartMonth(i) ? '#f1f5ff' : 'transparent'" rx="6"></rect>
                   <rect :x="50 + i*49 + 8" :y="192 - barH(mo.income)" width="14" :height="barH(mo.income)" rx="3" fill="#10b981"></rect>
                   <rect :x="50 + i*49 + 25" :y="192 - barH(mo.expense)" width="14" :height="barH(mo.expense)" rx="3" fill="#fb7185"></rect>
-                  <text :x="50 + i*49 + 23.5" y="222" text-anchor="middle" font-size="11" :fill="isSelectedChartMonth(i) ? '#2450d8' : '#64748b'" :font-weight="isSelectedChartMonth(i) ? 700 : 400">{{ LAO_MONTHS_SHORT[i] }}</text>
+                  <text :x="50 + i*49 + 23.5" y="222" text-anchor="middle" font-size="12" :fill="isSelectedChartMonth(i) ? '#2450d8' : '#64748b'" :font-weight="isSelectedChartMonth(i) ? 700 : 400">{{ LAO_MONTHS_SHORT[i] }}</text>
                 </g>
               </svg>
               <div v-if="hoverMonth !== null" class="absolute top-0 right-0 bg-slate-900 text-white text-xs rounded-xl px-3 py-2 shadow-lg pointer-events-none">
@@ -294,12 +321,13 @@
                 <p class="num"><span class="text-rose-300">ຈ່າຍ</span> {{ formatMoney(monthly[hoverMonth].expense) }}</p>
               </div>
             </div>
+            <p class="text-[11px] text-slate-400 mt-1">ກົດທີ່ແທ່ງເພື່ອເບິ່ງເດືອນນັ້ນ</p>
           </div>
 
-          <!-- Category breakdown -->
+          <!-- Category share -->
           <div class="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 md:p-6">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="font-bold">ແຍກຕາມໝວດໝູ່</h2>
+              <h2 class="font-bold">ສັດສ່ວນຕາມໝວດ</h2>
               <div class="flex bg-slate-100 rounded-lg p-0.5 text-xs font-semibold">
                 <button @click="catMode = 'expense'" class="px-2.5 py-1.5 rounded-md transition" :class="catMode === 'expense' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'">ລາຍຈ່າຍ</button>
                 <button @click="catMode = 'income'" class="px-2.5 py-1.5 rounded-md transition" :class="catMode === 'income' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500'">ລາຍຮັບ</button>
@@ -310,14 +338,12 @@
               <div class="flex h-3 rounded-full overflow-hidden bg-slate-100">
                 <div v-for="c in catBreakdown.items" :key="'s'+c.name" :style="{ width: c.pct + '%', background: catColor(c.name) }"></div>
               </div>
-              <div v-for="c in catBreakdown.items" :key="c.name">
-                <div class="flex items-center justify-between text-sm gap-2">
-                  <span class="flex items-center gap-2 min-w-0"><span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: catColor(c.name) }"></span><span class="truncate">{{ c.name }}</span></span>
-                  <span class="num font-semibold whitespace-nowrap">{{ formatNumber(c.v) }} <span class="text-slate-400 font-normal text-xs">{{ c.pct.toFixed(0) }}%</span></span>
-                </div>
+              <div v-for="c in catBreakdown.items" :key="c.name" class="flex items-center justify-between text-sm gap-2">
+                <span class="flex items-center gap-2 min-w-0"><span class="w-2.5 h-2.5 rounded-full shrink-0" :style="{ background: catColor(c.name) }"></span><span class="truncate">{{ c.name }}</span></span>
+                <span class="num font-semibold whitespace-nowrap">{{ formatNumber(c.v) }} <span class="text-slate-400 font-normal text-xs">{{ c.pct.toFixed(0) }}%</span></span>
               </div>
               <div class="pt-3 border-t border-slate-100 flex justify-between text-sm">
-                <span class="text-slate-500">ລວມ</span><span class="num font-bold">{{ formatMoney(catBreakdown.total) }}</span>
+                <span class="text-slate-500">ລວມ (ທຸກໝວດ, {{ periodLabel(dash) }})</span><span class="num font-bold">{{ formatMoney(catBreakdown.total) }}</span>
               </div>
             </div>
           </div>
@@ -327,7 +353,7 @@
         <div class="bg-white rounded-2xl border border-slate-200/70 shadow-sm">
           <div class="flex items-center justify-between px-4 md:px-6 py-4 border-b border-slate-100">
             <h2 class="font-bold">ລາຍການລ່າສຸດ</h2>
-            <button @click="go('transactions')" class="text-sm font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">ເບິ່ງທັງໝົດ <app-icon name="chevRight" :size="16"></app-icon></button>
+            <button @click="openTxFromDash" class="text-sm font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">ເບິ່ງທັງໝົດ <app-icon name="chevRight" :size="16"></app-icon></button>
           </div>
           <div v-if="recent.length === 0" class="py-12 text-center text-sm text-slate-400">{{ loading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : 'ຍັງບໍ່ມີລາຍການໃນຊ່ວງນີ້' }}</div>
           <ul v-else class="divide-y divide-slate-100">
@@ -362,6 +388,7 @@
             <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"><app-icon name="search" :size="18"></app-icon></span>
             <input v-model="f.q" type="search" placeholder="ຄົ້ນຫາລາຍລະອຽດ, ໝວດໝູ່ ຫຼື ຈຳນວນເງິນ..." class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 pl-11 pr-4 text-sm outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-100 transition">
           </div>
+          <period-picker :p="f" :years="yearsAvailable" compact></period-picker>
           <div class="flex flex-wrap gap-2">
             <div class="flex bg-slate-100 rounded-xl p-1 text-sm font-semibold">
               <button v-for="o in typeOptions" :key="o.v" @click="f.type = o.v" class="px-3 h-9 rounded-lg transition" :class="f.type === o.v ? 'bg-white shadow-sm ' + o.on : 'text-slate-500'">{{ o.label }}</button>
@@ -370,16 +397,32 @@
               <option value="">ທຸກໝວດໝູ່</option>
               <option v-for="c in allCategories" :key="c" :value="c">{{ c }}</option>
             </select>
-            <input type="month" v-model="f.month" class="h-11 flex-1 min-w-[150px] md:flex-none rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
             <button v-if="hasFilter" @click="clearFilters" class="h-11 px-3 rounded-xl text-sm font-semibold text-brand-600 hover:bg-brand-50 flex items-center gap-1"><app-icon name="x" :size="16"></app-icon> ລ້າງການກັ່ນຕອງ</button>
           </div>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs md:text-sm pt-1">
             <span class="text-slate-500">ພົບ <b class="text-slate-800">{{ txList.length }}</b> ລາຍການ</span>
             <span class="num text-emerald-600 font-semibold">ຮັບ {{ formatNumber(txSum.income) }}</span>
             <span class="num text-rose-600 font-semibold">ຈ່າຍ {{ formatNumber(txSum.expense) }}</span>
+            <span class="num font-semibold" :class="txEndBalance < 0 ? 'text-rose-700' : 'text-brand-700'">ຍອດເຫຼືອ{{ f.category ? ' ' + f.category : '' }} {{ formatNumber(txEndBalance) }}</span>
             <button @click="exportCSV" :disabled="txList.length === 0" class="md:hidden ml-auto flex items-center gap-1 text-brand-600 font-semibold disabled:opacity-50"><app-icon name="download" :size="15"></app-icon> CSV</button>
           </div>
         </div>
+
+        <!-- Category balance chips -->
+        <div class="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 snap-x">
+          <button @click="f.category = ''" class="snap-start shrink-0 min-w-[150px] text-left rounded-xl px-3.5 py-2.5 border shadow-sm transition"
+            :class="!f.category ? 'bg-brand-600 border-brand-600 text-white' : 'bg-white border-slate-200/70 hover:border-brand-300'">
+            <p class="text-[11px] font-semibold" :class="!f.category ? 'text-white/80' : 'text-slate-500'">ລວມທຸກໝວດ</p>
+            <p class="num font-bold mt-0.5" :class="!f.category ? '' : (txTotalBalance < 0 ? 'text-rose-600' : 'text-slate-900')">{{ formatMoney(txTotalBalance) }}</p>
+          </button>
+          <button v-for="c in txCatBalances" :key="c.name" @click="f.category = f.category === c.name ? '' : c.name"
+            class="snap-start shrink-0 min-w-[150px] text-left rounded-xl px-3.5 py-2.5 border shadow-sm bg-white transition hover:border-brand-300"
+            :class="f.category === c.name ? 'border-brand-500 ring-4 ring-brand-100' : 'border-slate-200/70'">
+            <p class="text-[11px] font-semibold text-slate-500 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="{ background: catColor(c.name) }"></span>{{ c.name }}</p>
+            <p class="num font-bold mt-0.5" :class="c.balance < 0 ? 'text-rose-600' : 'text-slate-900'">{{ formatMoney(c.balance) }}</p>
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-400 -mt-2 px-1">ຍອດເຫຼືອສະສົມຮອດ{{ periodEndLabel(f) }}</p>
 
         <!-- Desktop table -->
         <div class="hidden md:block bg-white rounded-2xl border border-slate-200/70 shadow-sm overflow-hidden">
@@ -390,13 +433,14 @@
                 <th class="px-5 py-3 font-semibold">ລາຍລະອຽດ</th>
                 <th class="px-5 py-3 font-semibold">ໝວດໝູ່</th>
                 <th class="px-5 py-3 font-semibold text-right">ຈຳນວນເງິນ</th>
+                <th class="px-5 py-3 font-semibold text-right" :title="'ຍອດເຫຼືອຫຼັງລາຍການນີ້' + (f.category ? ' (ໝວດ ' + f.category + ')' : ' (ທຸກໝວດ)')">ຍອດເຫຼືອ{{ f.category ? '' : ' (ລວມ)' }}</th>
                 <th class="px-5 py-3 font-semibold">ຜູ້ບັນທຶກ</th>
                 <th v-if="isAdmin" class="px-5 py-3 font-semibold text-center w-28">ຈັດການ</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
               <tr v-if="txList.length === 0">
-                <td :colspan="isAdmin ? 6 : 5" class="py-16 text-center text-slate-400">{{ loading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : (transactions.length ? 'ບໍ່ພົບລາຍການທີ່ກົງກັບເງື່ອນໄຂ' : 'ຍັງບໍ່ມີຂໍ້ມູນໃນລະບົບ') }}</td>
+                <td :colspan="isAdmin ? 7 : 6" class="py-16 text-center text-slate-400">{{ loading ? 'ກຳລັງໂຫຼດຂໍ້ມູນ...' : (transactions.length ? 'ບໍ່ພົບລາຍການທີ່ກົງກັບເງື່ອນໄຂ' : 'ຍັງບໍ່ມີຂໍ້ມູນໃນລະບົບ') }}</td>
               </tr>
               <tr v-for="t in txVisible" :key="t.id" class="hover:bg-slate-50/70" :class="deletingId === t.id ? 'opacity-40' : ''">
                 <td class="px-5 py-3 whitespace-nowrap text-slate-600">{{ laoDateShort(t.date) }}</td>
@@ -407,6 +451,7 @@
                   <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700"><span class="w-2 h-2 rounded-full" :style="{ background: catColor(t.category) }"></span>{{ t.category }}</span>
                 </td>
                 <td class="px-5 py-3 text-right whitespace-nowrap num font-bold" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">{{ t.type === 'income' ? '+' : '−' }}{{ formatNumber(t.amount) }}</td>
+                <td class="px-5 py-3 text-right whitespace-nowrap num text-slate-600" :class="runBal.get(t) < 0 ? 'text-rose-600' : ''">{{ signed(runBal.get(t) || 0) }}</td>
                 <td class="px-5 py-3 text-xs text-slate-500 whitespace-nowrap">{{ t.addedBy || '—' }}<span v-if="t.editedBy" class="block text-slate-400">ແກ້: {{ t.editedBy }}</span></td>
                 <td v-if="isAdmin" class="px-3 py-3">
                   <div class="flex justify-center gap-1">
@@ -440,7 +485,10 @@
                       <p class="text-sm font-semibold leading-snug break-words">{{ t.description || '—' }}</p>
                       <p class="num text-sm font-bold whitespace-nowrap" :class="t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'">{{ t.type === 'income' ? '+' : '−' }}{{ formatNumber(t.amount) }}</p>
                     </div>
-                    <p class="text-xs text-slate-500 mt-0.5 flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" :style="{ background: catColor(t.category) }"></span>{{ t.category }}<span v-if="t.addedBy" class="text-slate-400">· {{ t.addedBy }}</span></p>
+                    <div class="flex items-center justify-between gap-2 mt-0.5">
+                      <p class="text-xs text-slate-500 flex items-center gap-1.5 min-w-0"><span class="w-2 h-2 rounded-full shrink-0" :style="{ background: catColor(t.category) }"></span><span class="truncate">{{ t.category }}</span><span v-if="t.addedBy" class="text-slate-400 shrink-0">· {{ t.addedBy }}</span></p>
+                      <p class="text-[11px] num whitespace-nowrap" :class="runBal.get(t) < 0 ? 'text-rose-500' : 'text-slate-400'">ເຫຼືອ {{ signed(runBal.get(t) || 0) }}</p>
+                    </div>
                   </div>
                 </div>
                 <div v-if="isAdmin" class="flex justify-end gap-2 mt-2.5">
@@ -461,7 +509,7 @@
       <section v-if="view === 'report'" class="max-w-6xl mx-auto p-4 md:p-8 space-y-5">
         <div class="no-print hidden md:block">
           <h1 class="text-2xl font-bold">ລາຍງານ / ພິມບົດສະຫຼຸບ</h1>
-          <p class="text-slate-500 text-sm mt-1">ຍອດຍົກມາຄິດໄລ່ອັດຕະໂນມັດຈາກທຸກລາຍການກ່ອນເດືອນທີ່ເລືອກ</p>
+          <p class="text-slate-500 text-sm mt-1">ເລືອກພິມລາຍເດືອນ, ລາຍປີ ຫຼື ທັງໝົດ ແລະ ເລືອກໝວດໄດ້ · ຍອດຍົກມາຄິດໄລ່ອັດຕະໂນມັດ</p>
         </div>
 
         <div class="no-print !mt-0 md:!mt-5 bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4 md:p-5 grid grid-cols-2 md:grid-cols-12 gap-3 items-end">
@@ -469,14 +517,14 @@
             <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຫົວຂໍ້ລາຍງານ</span>
             <input v-model="rep.title" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500">
           </label>
-          <label class="col-span-1 md:col-span-2 block">
-            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ເດືອນ</span>
-            <input type="month" v-model="rep.month" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
-          </label>
-          <label class="col-span-1 md:col-span-2 block">
+          <div class="col-span-2 md:col-span-5">
+            <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຊ່ວງເວລາ</span>
+            <period-picker :p="rep" :years="yearsAvailable" compact></period-picker>
+          </div>
+          <label class="col-span-2 md:col-span-3 block">
             <span class="block text-xs font-semibold text-slate-500 mb-1.5">ໝວດໝູ່</span>
-            <select v-model="rep.category" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-brand-500">
-              <option value="">ທັງໝົດ</option>
+            <select v-model="rep.category" class="w-full h-11 rounded-xl border bg-slate-50 px-3 text-sm outline-none focus:border-brand-500" :class="rep.category ? 'border-brand-500 text-brand-700 font-semibold' : 'border-slate-200'">
+              <option value="">ທຸກໝວດໝູ່</option>
               <option v-for="c in allCategories" :key="c" :value="c">{{ c }}</option>
             </select>
           </label>
@@ -499,11 +547,17 @@
             <span class="block text-xs font-semibold text-slate-500 mb-1.5">ຊື່ຫົວໜ້າພະແນກ</span>
             <input v-model="rep.head" placeholder="(ບໍ່ບັງຄັບ)" class="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:bg-white focus:border-brand-500">
           </label>
-          <div class="col-span-2 md:col-span-4 flex gap-2">
+          <div class="col-span-2 md:col-span-12 flex flex-wrap gap-2">
             <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer select-none">
               <input type="checkbox" v-model="rep.national" class="w-4 h-4 accent-brand-600"> ຫົວເອກະສານລັດ
             </label>
-            <button @click="printReport" class="flex-1 h-11 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold flex items-center justify-center gap-2 shadow-md shadow-brand-600/25">
+            <label class="flex items-center gap-2 text-xs font-semibold text-slate-600 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer select-none">
+              <input type="checkbox" v-model="rep.detail" class="w-4 h-4 accent-brand-600"> ພິມລາຍລະອຽດທຸກລາຍການ
+            </label>
+            <label v-if="rep.mode !== 'month'" class="flex items-center gap-2 text-xs font-semibold text-slate-600 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer select-none">
+              <input type="checkbox" v-model="rep.monthlySummary" class="w-4 h-4 accent-brand-600"> ສັງລວມລາຍເດືອນ
+            </label>
+            <button @click="printReport" class="flex-1 min-w-[200px] md:flex-none md:ml-auto md:px-8 h-11 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold flex items-center justify-center gap-2 shadow-md shadow-brand-600/25">
               <app-icon name="printer" :size="18"></app-icon> ພິມ / ບັນທຶກ PDF
             </button>
           </div>
@@ -520,10 +574,10 @@
             <div class="text-center mb-6">
               <h2 class="text-xl font-bold">{{ rep.title || 'ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ' }}</h2>
               <p class="font-semibold mt-0.5">{{ ORG_NAME }}</p>
-              <p class="mt-1.5 text-slate-700">ປະຈຳ: <b>{{ laoMonthYear(rep.month) }}</b><span v-if="rep.category"> &nbsp;·&nbsp; ໝວດໝູ່: <b>{{ rep.category }}</b></span></p>
+              <p class="mt-1.5 text-slate-700">ປະຈຳ: <b>{{ repPeriodText }}</b><span v-if="rep.category"> &nbsp;·&nbsp; ໝວດໝູ່: <b>{{ rep.category }}</b></span></p>
             </div>
 
-            <table class="w-full border-collapse">
+            <table v-if="rep.detail" class="w-full border-collapse">
               <thead>
                 <tr class="bg-slate-100">
                   <th class="border border-slate-500 px-2 py-2 w-10 text-center">ລ/ດ</th>
@@ -538,8 +592,8 @@
               <tbody>
                 <tr class="bg-slate-50">
                   <td class="border border-slate-500 px-2 py-1.5 text-center">—</td>
-                  <td class="border border-slate-500 px-2 py-1.5">{{ rep.month ? laoDateShort(rep.month + '-01') : '—' }}</td>
-                  <td class="border border-slate-500 px-2 py-1.5 font-bold" colspan="4">ຍອດຍົກມາ{{ rep.month ? 'ຈາກເດືອນກ່ອນ' : '' }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5">{{ repStart ? laoDateShort(repStart) : '—' }}</td>
+                  <td class="border border-slate-500 px-2 py-1.5 font-bold" colspan="4">ຍອດຍົກມາ{{ rep.mode === 'month' ? 'ຈາກເດືອນກ່ອນ' : rep.mode === 'year' ? 'ຈາກປີກ່ອນ' : '' }}</td>
                   <td class="border border-slate-500 px-2 py-1.5 text-right num font-bold">{{ signed(carried) }}</td>
                 </tr>
                 <tr v-if="repRows.length === 0">
@@ -570,6 +624,39 @@
               <div class="border border-slate-300 rounded-lg p-3"><p class="text-[11px] text-slate-500">ລາຍຮັບລວມ</p><p class="num font-bold mt-0.5 text-emerald-700">{{ formatMoney(repSum.income) }}</p></div>
               <div class="border border-slate-300 rounded-lg p-3"><p class="text-[11px] text-slate-500">ລາຍຈ່າຍລວມ</p><p class="num font-bold mt-0.5 text-rose-700">{{ formatMoney(repSum.expense) }}</p></div>
               <div class="border-2 border-slate-800 rounded-lg p-3"><p class="text-[11px] text-slate-500">ຍອດຍົກໄປ</p><p class="num font-bold mt-0.5">{{ formatMoney(repSum.end) }}</p></div>
+            </div>
+
+            <div v-if="rep.mode !== 'month' && rep.monthlySummary && repMonthly.length" class="mt-6 avoid-break">
+              <p class="font-bold mb-2">ສັງລວມລາຍເດືອນ{{ rep.category ? ' — ' + rep.category : '' }}</p>
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-slate-100">
+                    <th class="border border-slate-500 px-2 py-1.5 text-left">ເດືອນ</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ຍອດຍົກມາ</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ລາຍຮັບ</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ລາຍຈ່າຍ</th>
+                    <th class="border border-slate-500 px-2 py-1.5 text-right w-32">ຍອດຍົກໄປ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="m in repMonthly" :key="m.ym">
+                    <td class="border border-slate-500 px-2 py-1.5">{{ laoMonthYear(m.ym) }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ signed(m.open) }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ m.income ? formatNumber(m.income) : '—' }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ m.expense ? formatNumber(m.expense) : '—' }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num font-semibold" :class="m.close < 0 ? 'text-rose-700' : ''">{{ signed(m.close) }}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="bg-slate-100 font-bold">
+                    <td class="border border-slate-500 px-2 py-1.5 text-right">ລວມ</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ signed(carried) }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ formatNumber(repSum.income) }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ formatNumber(repSum.expense) }}</td>
+                    <td class="border border-slate-500 px-2 py-1.5 text-right num">{{ signed(repSum.end) }}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
 
             <div v-if="!rep.category && repByCat.length > 1" class="mt-6 avoid-break">
@@ -809,6 +896,13 @@ const laoDate = ymd => { if (!ymd) return '—'; const [y, m, d] = ymd.split('-'
 const laoDateShort = ymd => { if (!ymd) return '—'; const [y, m, d] = ymd.split('-'); return `${d}/${m}/${y}`; };
 const laoMonthYear = ym => { if (!ym) return 'ທຸກເດືອນ (ທັງໝົດ)'; const [y, m] = ym.split('-'); return `${LAO_MONTHS[Number(m) - 1]} ${y}`; };
 const shiftMonth = (ym, k) => { let [y, m] = ym.split('-').map(Number); m += k; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return `${y}-${pad(m)}`; };
+/* ---- ຊ່ວງເວລາ: p = { mode:'month'|'year'|'all', month:'YYYY-MM', year:Number } ---- */
+const periodPrefix = p => p.mode === 'month' ? (p.month || '') : p.mode === 'year' ? String(p.year) : '';
+const periodEnd = p => p.mode === 'month' && p.month ? p.month + '-31' : p.mode === 'year' ? p.year + '-12-31' : '9999-12-31';
+const prevPrefix = p => p.mode === 'month' && p.month ? shiftMonth(p.month, -1) : p.mode === 'year' ? String(p.year - 1) : null;
+const periodLabel = p => p.mode === 'month' && p.month ? 'ເດືອນ ' + laoMonthYear(p.month) : p.mode === 'year' ? 'ປີ ' + p.year : 'ທັງໝົດ';
+const periodEndLabel = p => p.mode === 'month' && p.month ? 'ທ້າຍເດືອນ ' + laoMonthYear(p.month) : p.mode === 'year' ? 'ທ້າຍປີ ' + p.year : 'ປັດຈຸບັນ';
+const compareLabel = p => p.mode === 'year' ? 'ທຽບປີກ່ອນ' : 'ທຽບເດືອນກ່ອນ';
 const sumOf = list => list.reduce((s, t) => { s[t.type] += t.amount; return s; }, { income: 0, expense: 0 });
 const niceMax = v => { const p = Math.pow(10, Math.floor(Math.log10(v))); for (const s of [1, 2, 2.5, 4, 5, 10]) if (s * p >= v) return s * p; return 10 * p; };
 const maskUrl = u => u.replace(/\/s\/([^/]{6})[^/]+([^/]{4})\//, '/s/$1••••$2/');
@@ -943,6 +1037,44 @@ const AppIcon = {
   template: `<svg :width="size" :height="size" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path :d="ICONS[name]"></path></svg>`
 };
 
+/* ---- ຕົວເລືອກຊ່ວງເວລາ (ໃຊ້ທັງໜ້າຫຼັກ ແລະ ແທັບລາຍການ) ---- */
+const PeriodPicker = {
+  props: { p: Object, years: Array, compact: Boolean },
+  setup(props) {
+    const modes = [{ v: 'month', label: 'ເດືອນ' }, { v: 'year', label: 'ປີ' }, { v: 'all', label: 'ທັງໝົດ' }];
+    const yearOptions = Vue.computed(() => [...new Set([...(props.years || []), props.p.year])].sort((a, b) => b - a));
+    const setMode = m => {
+      const p = props.p;
+      if (m === 'year' && p.month) p.year = Number(p.month.slice(0, 4));
+      if (m === 'month' && (!p.month || Number(p.month.slice(0, 4)) !== p.year)) {
+        p.month = p.year === new Date().getFullYear() ? thisMonth() : `${p.year}-12`;
+      }
+      p.mode = m;
+    };
+    const shift = k => {
+      const p = props.p;
+      if (p.mode === 'month') { p.month = shiftMonth(p.month || thisMonth(), k); p.year = Number(p.month.slice(0, 4)); }
+      else if (p.mode === 'year') p.year += k;
+    };
+    return { modes, yearOptions, setMode, shift };
+  },
+  template: `
+    <div class="flex gap-2 min-w-0" :class="compact ? 'flex-wrap items-center' : 'w-full md:w-auto flex-col sm:flex-row sm:items-center'">
+      <div class="flex rounded-xl p-1 text-sm font-semibold shrink-0" :class="compact ? 'bg-slate-100' : 'bg-white border border-slate-200 shadow-sm w-full sm:w-auto'">
+        <button v-for="m in modes" :key="m.v" type="button" @click="setMode(m.v)" class="px-3 h-9 rounded-lg transition" :style="compact ? '' : 'flex:1 1 0'"
+          :class="p.mode === m.v ? (compact ? 'bg-white shadow-sm text-brand-700' : 'bg-brand-600 text-white') : 'text-slate-500 hover:text-slate-800'">{{ m.label }}</button>
+      </div>
+      <div v-if="p.mode !== 'all'" class="flex-1 md:flex-none flex items-center rounded-xl p-1 min-w-[220px]" :class="compact ? 'bg-slate-50 border border-slate-200' : 'bg-white border border-slate-200 shadow-sm'">
+        <button type="button" @click="shift(-1)" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 shrink-0" aria-label="ກ່ອນໜ້າ"><app-icon name="chevLeft" :size="18"></app-icon></button>
+        <input v-if="p.mode === 'month'" type="month" v-model="p.month" @change="p.month && (p.year = Number(p.month.slice(0, 4)))" class="flex-1 min-w-0 md:w-40 bg-transparent text-sm font-semibold text-center outline-none h-9" style="min-height:0">
+        <select v-else v-model.number="p.year" class="flex-1 min-w-0 md:w-28 bg-transparent text-sm font-semibold text-center outline-none h-9 appearance-none cursor-pointer">
+          <option v-for="y in yearOptions" :key="y" :value="y">ປີ {{ y }}</option>
+        </select>
+        <button type="button" @click="shift(1)" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-100 shrink-0" aria-label="ຖັດໄປ"><app-icon name="chevRight" :size="18"></app-icon></button>
+      </div>
+    </div>`
+};
+
 /* =====================================================================
    App
    ===================================================================== */
@@ -1066,68 +1198,105 @@ const app = createApp({
     });
     const catColor = name => CAT_COLORS[CATEGORIES.indexOf(name)] || '#64748b';
 
-    /* ---- dashboard ---- */
-    const dashMonth = ref(thisMonth());
-    const shiftDashMonth = k => { if (dashMonth.value) dashMonth.value = shiftMonth(dashMonth.value, k); };
-    const dashList = computed(() => dashMonth.value ? transactions.value.filter(t => t.date.startsWith(dashMonth.value)) : transactions.value);
-    const dashSum = computed(() => { const s = sumOf(dashList.value); return { ...s, net: s.income - s.expense }; });
-    const prevSum = computed(() => dashMonth.value ? sumOf(transactions.value.filter(t => t.date.startsWith(shiftMonth(dashMonth.value, -1)))) : null);
-    const pct = (cur, prev) => prev ? Math.round((cur - prev) / prev * 100) : null;
-    const incomeChange = computed(() => prevSum.value ? pct(dashSum.value.income, prevSum.value.income) : null);
-    const expenseChange = computed(() => prevSum.value ? pct(dashSum.value.expense, prevSum.value.expense) : null);
-    const cumulativeBalance = computed(() => {
-      const end = dashMonth.value ? dashMonth.value + '-31' : '9999-12-31';
-      const s = sumOf(transactions.value.filter(t => t.date <= end));
-      return s.income - s.expense;
-    });
-    const recent = computed(() => dashList.value.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6));
-
-    const chartYear = ref(new Date().getFullYear());
-    watch(dashMonth, v => { if (v) chartYear.value = Number(v.slice(0, 4)); });
+    /* ---- period helpers (ເດືອນ / ປີ / ທັງໝົດ) ---- */
+    const catOk = (t, cat) => !cat || t.category === cat;
+    const inPeriod = (t, p) => { const x = periodPrefix(p); return !x || t.date.startsWith(x); };
+    const balanceUntil = (end, cat) => {
+      let b = 0;
+      transactions.value.forEach(t => { if (t.date <= end && catOk(t, cat)) b += t.type === 'income' ? t.amount : -t.amount; });
+      return b;
+    };
+    const catBalancesFor = p => {
+      const end = periodEnd(p);
+      const used = new Set(transactions.value.map(t => t.category));
+      return allCategories.value.filter(n => used.has(n)).map(name => {
+        let income = 0, expense = 0, balance = 0;
+        transactions.value.forEach(t => {
+          if (t.category !== name) return;
+          if (t.date <= end) balance += t.type === 'income' ? t.amount : -t.amount;
+          if (inPeriod(t, p)) { if (t.type === 'income') income += t.amount; else expense += t.amount; }
+        });
+        return { name, income, expense, balance };
+      });
+    };
     const yearsAvailable = computed(() => {
       const ys = new Set([new Date().getFullYear()]);
       transactions.value.forEach(t => { const y = Number(t.date.slice(0, 4)); if (y) ys.add(y); });
       return [...ys].sort((a, b) => b - a);
     });
+
+    /* ---- dashboard ---- */
+    const dash = reactive({ mode: 'month', month: thisMonth(), year: new Date().getFullYear(), category: '' });
+    const dashList = computed(() => transactions.value.filter(t => inPeriod(t, dash) && catOk(t, dash.category)));
+    const dashSum = computed(() => { const s = sumOf(dashList.value); return { ...s, net: s.income - s.expense }; });
+    const prevSum = computed(() => {
+      const pp = prevPrefix(dash);
+      return pp ? sumOf(transactions.value.filter(t => t.date.startsWith(pp) && catOk(t, dash.category))) : null;
+    });
+    const pct = (cur, prev) => prev ? Math.round((cur - prev) / prev * 100) : null;
+    const incomeChange = computed(() => prevSum.value ? pct(dashSum.value.income, prevSum.value.income) : null);
+    const expenseChange = computed(() => prevSum.value ? pct(dashSum.value.expense, prevSum.value.expense) : null);
+    const cumulativeBalance = computed(() => balanceUntil(periodEnd(dash), dash.category));
+    const dashCatBalances = computed(() => catBalancesFor(dash));
+    const recent = computed(() => dashList.value.slice().sort((a, b) => b.date.localeCompare(a.date)).slice(0, 6));
+
+    const chartYearAll = ref(new Date().getFullYear());
+    const chartYear = computed(() => dash.mode === 'year' ? dash.year : dash.mode === 'month' && dash.month ? Number(dash.month.slice(0, 4)) : chartYearAll.value);
     const monthly = computed(() => {
       const arr = Array.from({ length: 12 }, () => ({ income: 0, expense: 0 }));
       const y = String(chartYear.value);
-      transactions.value.forEach(t => { if (t.date.slice(0, 4) === y) { const i = Number(t.date.slice(5, 7)) - 1; if (arr[i]) arr[i][t.type] += t.amount; } });
+      transactions.value.forEach(t => {
+        if (t.date.slice(0, 4) === y && catOk(t, dash.category)) { const i = Number(t.date.slice(5, 7)) - 1; if (arr[i]) arr[i][t.type] += t.amount; }
+      });
       return arr;
     });
     const chartMax = computed(() => niceMax(Math.max(1, ...monthly.value.flatMap(m => [m.income, m.expense]))));
     const barH = v => v > 0 ? Math.max(2, v / chartMax.value * 180) : 0;
     const hoverMonth = ref(null);
-    const isSelectedChartMonth = i => dashMonth.value === `${chartYear.value}-${pad(i + 1)}`;
+    const isSelectedChartMonth = i => dash.mode === 'month' && dash.month === `${chartYear.value}-${pad(i + 1)}`;
+    const pickChartMonth = i => { const y = chartYear.value; dash.mode = 'month'; dash.month = `${y}-${pad(i + 1)}`; dash.year = y; };
 
     const catMode = ref('expense');
     const catBreakdown = computed(() => {
       const map = {};
-      dashList.value.forEach(t => { if (t.type === catMode.value) map[t.category] = (map[t.category] || 0) + t.amount; });
+      transactions.value.forEach(t => { if (t.type === catMode.value && inPeriod(t, dash)) map[t.category] = (map[t.category] || 0) + t.amount; });
       const total = Object.values(map).reduce((a, b) => a + b, 0);
       return { total, items: Object.entries(map).map(([name, v]) => ({ name, v, pct: total ? v / total * 100 : 0 })).sort((a, b) => b.v - a.v) };
     });
 
     /* ---- transactions list ---- */
-    const f = reactive({ q: '', type: '', category: '', month: '' });
+    const f = reactive({ q: '', type: '', category: '', mode: 'all', month: thisMonth(), year: new Date().getFullYear() });
     const typeOptions = [
       { v: '', label: 'ທັງໝົດ', on: 'text-slate-800' },
       { v: 'income', label: 'ລາຍຮັບ', on: 'text-emerald-600' },
       { v: 'expense', label: 'ລາຍຈ່າຍ', on: 'text-rose-600' }
     ];
-    const hasFilter = computed(() => !!(f.q || f.type || f.category || f.month));
-    const clearFilters = () => Object.assign(f, { q: '', type: '', category: '', month: '' });
+    const hasFilter = computed(() => !!(f.q || f.type || f.category || f.mode !== 'all'));
+    const clearFilters = () => Object.assign(f, { q: '', type: '', category: '', mode: 'all' });
+    const openTxFromDash = () => { Object.assign(f, { q: '', type: '', category: dash.category, mode: dash.mode, month: dash.month, year: dash.year }); go('transactions'); };
+    const indexed = computed(() => transactions.value.map((t, i) => [t, i]));
     const txList = computed(() => {
       const q = f.q.trim().toLowerCase();
       const qNum = q.replace(/[,\s]/g, '');
-      return transactions.value.filter(t =>
+      return indexed.value.filter(([t]) =>
         (!f.type || t.type === f.type) &&
-        (!f.category || t.category === f.category) &&
-        (!f.month || t.date.startsWith(f.month)) &&
+        catOk(t, f.category) &&
+        inPeriod(t, f) &&
         (!q || t.description.toLowerCase().includes(q) || t.category.toLowerCase().includes(q) || (qNum && /^\d+$/.test(qNum) && String(t.amount).includes(qNum)))
-      ).sort((a, b) => b.date.localeCompare(a.date));
+      ).sort((a, b) => b[0].date.localeCompare(a[0].date) || b[1] - a[1]).map(x => x[0]);
+    });
+    // ຍອດເຫຼືອຫຼັງແຕ່ລະລາຍການ (ສະສົມຕາມລຳດັບວັນທີ, ຕາມໝວດທີ່ເລືອກ ຫຼື ທຸກໝວດ)
+    const runBal = computed(() => {
+      const m = new Map(); let b = 0;
+      indexed.value.filter(([t]) => catOk(t, f.category))
+        .sort((a, c) => a[0].date.localeCompare(c[0].date) || a[1] - c[1])
+        .forEach(([t]) => { b += t.type === 'income' ? t.amount : -t.amount; m.set(t, b); });
+      return m;
     });
     const txSum = computed(() => sumOf(txList.value));
+    const txEndBalance = computed(() => balanceUntil(periodEnd(f), f.category));
+    const txTotalBalance = computed(() => balanceUntil(periodEnd(f), ''));
+    const txCatBalances = computed(() => catBalancesFor(f));
     const txLimit = ref(60);
     watch(f, () => { txLimit.value = 60; });
     const txVisible = computed(() => txList.value.slice(0, txLimit.value));
@@ -1148,7 +1317,7 @@ const app = createApp({
       try {
         const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
         const a = document.createElement('a');
-        a.href = url; a.download = `ບັນຊີ_${f.month || 'ທັງໝົດ'}_${todayYMD()}.csv`;
+        a.href = url; a.download = `ບັນຊີ_${f.category ? f.category + '_' : ''}${periodPrefix(f) || 'ທັງໝົດ'}_${todayYMD()}.csv`;
         document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 2000);
         toast('ສົ່ງອອກ CSV ແລ້ວ');
@@ -1224,21 +1393,33 @@ const app = createApp({
     }
 
     /* ---- report ---- */
-    const rep = reactive({ title: 'ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ', month: thisMonth(), category: '', cfMode: 'auto', cfManual: '', preparer: '', head: '', national: true });
+    const rep = reactive({ title: 'ບົດສະຫຼຸບລາຍຮັບ-ລາຍຈ່າຍ', mode: 'month', month: thisMonth(), year: new Date().getFullYear(), detail: true, monthlySummary: true, category: '', cfMode: 'auto', cfManual: '', preparer: '', head: '', national: true });
     const cfManualDisplay = computed({
       get: () => rep.cfManual === '' ? '' : (rep.cfManual < 0 ? '-' : '') + formatNumber(Math.abs(rep.cfManual)),
       set: v => { const s = String(v); const neg = s.trim().startsWith('-'); const d = s.replace(/\D/g, '').slice(0, 13); rep.cfManual = d ? (neg ? -1 : 1) * Number(d) : (neg ? '' : ''); }
     });
     const repFilter = t => !rep.category || t.category === rep.category;
+    const repStart = computed(() => rep.mode === 'month' && rep.month ? rep.month + '-01' : rep.mode === 'year' ? rep.year + '-01-01' : '');
+    const repPeriodText = computed(() => rep.mode === 'month' && rep.month ? 'ເດືອນ ' + laoMonthYear(rep.month) : rep.mode === 'year' ? 'ປີ ' + rep.year : 'ທັງໝົດ (ທຸກປີ)');
     const autoCarried = computed(() => {
-      if (!rep.month) return 0;
-      const start = rep.month + '-01';
+      const start = repStart.value;
+      if (!start) return 0;
       const s = sumOf(transactions.value.filter(t => t.date < start && repFilter(t)));
       return s.income - s.expense;
     });
     const carried = computed(() => rep.cfMode === 'auto' ? autoCarried.value : (Number(rep.cfManual) || 0));
-    const repList = computed(() => transactions.value.filter(t => (!rep.month || t.date.startsWith(rep.month)) && repFilter(t)).sort((a, b) => a.date.localeCompare(b.date)));
+    const repList = computed(() => transactions.value.filter(t => inPeriod(t, rep) && repFilter(t)).sort((a, b) => a.date.localeCompare(b.date)));
     const repRows = computed(() => { let bal = carried.value; return repList.value.map((t, i) => { bal += t.type === 'income' ? t.amount : -t.amount; return { ...t, no: i + 1, bal }; }); });
+    const repMonthly = computed(() => {
+      const map = new Map();
+      repList.value.forEach(t => { const k = t.date.slice(0, 7); if (!map.has(k)) map.set(k, { income: 0, expense: 0 }); map.get(k)[t.type] += t.amount; });
+      if (rep.mode === 'year') {
+        const last = rep.year === new Date().getFullYear() ? new Date().getMonth() + 1 : 12;
+        for (let m = 1; m <= last; m++) { const k = `${rep.year}-${pad(m)}`; if (!map.has(k)) map.set(k, { income: 0, expense: 0 }); }
+      }
+      let bal = carried.value;
+      return [...map.keys()].sort().map(k => { const v = map.get(k); const open = bal; bal += v.income - v.expense; return { ym: k, open, income: v.income, expense: v.expense, close: bal }; });
+    });
     const repSum = computed(() => { const s = sumOf(repList.value); return { ...s, end: carried.value + s.income - s.expense }; });
     const repByCat = computed(() => allCategories.value.map(name => {
       const s = sumOf(repList.value.filter(t => t.category === name));
@@ -1272,16 +1453,18 @@ const app = createApp({
       login, handleLogin, logout, fetchTransactions,
       navItems, mobileNav, viewTitle, go,
       allCategories, catColor,
-      dashMonth, shiftDashMonth, dashList, dashSum, incomeChange, expenseChange, cumulativeBalance, recent,
-      chartYear, yearsAvailable, monthly, chartMax, barH, hoverMonth, isSelectedChartMonth, catMode, catBreakdown,
-      f, typeOptions, hasFilter, clearFilters, txList, txSum, txLimit, txVisible, txGroups, exportCSV,
+      dash, dashList, dashSum, incomeChange, expenseChange, cumulativeBalance, dashCatBalances, recent,
+      chartYear, chartYearAll, yearsAvailable, monthly, chartMax, barH, hoverMonth, isSelectedChartMonth, pickChartMonth, catMode, catBreakdown,
+      f, typeOptions, hasFilter, clearFilters, openTxFromDash, txList, txSum, txEndBalance, txTotalBalance, txCatBalances, runBal, txLimit, txVisible, txGroups, exportCSV,
+      periodLabel, periodEndLabel, compareLabel,
       form, amountDisplay, quickAmounts, formCategories, descSuggestions, openNew, openEdit, closeForm, saveForm, removeTx,
-      rep, cfManualDisplay, carried, repRows, repSum, repByCat, printReport,
+      rep, cfManualDisplay, carried, repRows, repSum, repByCat, repMonthly, repStart, repPeriodText, printReport,
       formatNumber, formatMoney, signed, shortMoney, laoDate, laoDateShort, laoMonthYear, todayYMD, thisMonth, timeText, maskUrl
     };
   }
 });
 app.component('AppIcon', AppIcon);
+app.component('PeriodPicker', PeriodPicker);
 app.mount('#app');
 </script>
 </body>
